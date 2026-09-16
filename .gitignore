@@ -1,0 +1,28 @@
+# Build trees
+build/
+build-*/
+
+# CMake
+CMakeCache.txt
+CMakeFiles/
+cmake_install.cmake
+compile_commands.json
+CMakeUserPresets.json
+_deps/
+
+# Build output
+*.o
+*.a
+*.so
+*.so.*
+
+# Editors
+.vscode/
+.idea/
+*.swp
+*~
+
+# Debug
+core
+vgcore.*
+*.log
