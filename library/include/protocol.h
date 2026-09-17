@@ -29,6 +29,40 @@ typedef struct
 ssize_t protocol_gpio_cfg(dir_t dir, port_t port, uint8_t pin, uint8_t *buffer,
                           size_t buffer_len);
 
+ssize_t protocol_gpio_set(level_t level, port_t port, uint8_t pin, uint8_t *buffer,
+                          size_t buffer_len);
+
+ssize_t protocol_gpio_get(port_t port, uint8_t pin, uint8_t *buffer, size_t buffer_len);
+
+ssize_t protocol_gpio_irq_cfg(edge_t edge, port_t port, uint8_t pin, uint8_t *buffer,
+                              size_t buffer_len);
+
+ssize_t protocol_gpio_irq_bind(edge_t edge, port_t in_port, uint8_t in_pin,
+                               action_t action, port_t out_port, uint8_t out_pin,
+                               uint8_t *buffer, size_t buffer_len);
+
+ssize_t protocol_gpio_irq_unbind(port_t port, uint8_t pin, uint8_t *buffer,
+                                 size_t buffer_len);
+
+ssize_t protocol_pwm_group_cfg(uint32_t freq_hz, uint8_t group, uint8_t *buffer,
+                               size_t buffer_len);
+
+ssize_t protocol_pwm_group_get(uint8_t group, uint8_t *buffer, size_t buffer_len);
+
+ssize_t protocol_pwm_group_release(uint8_t group, uint8_t *buffer, size_t buffer_len);
+
+ssize_t protocol_pwm_channel_cfg(polarity_t polarity, port_t port, uint8_t pin,
+                                 uint8_t *buffer, size_t buffer_len);
+
+ssize_t protocol_pwm_channel_set(uint16_t duty, port_t port, uint8_t pin,
+                                 uint8_t *buffer, size_t buffer_len);
+
+ssize_t protocol_pwm_channel_get(port_t port, uint8_t pin, uint8_t *buffer,
+                                 size_t buffer_len);
+
+ssize_t protocol_pwm_channel_release(port_t port, uint8_t pin, uint8_t *buffer,
+                                     size_t buffer_len);
+
 /* Decodes one complete candidate frame. Verifies SOF, LEN and the CRC before
  * filling `response`; a frame that fails any of those is STATUS_ERR_BAD_FRAME.
  * Bytes past the frame are ignored. */

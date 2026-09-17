@@ -78,4 +78,47 @@ void mcuco_close(mcuco_t *mcu);
 /* Sets a pin's direction. */
 mcu_status_t mcuco_gpio_cfg(mcuco_t *mcu, dir_t dir, port_t port, uint8_t pin);
 
+/* Drives an output pin. */
+mcu_status_t mcuco_gpio_set(mcuco_t *mcu, level_t level, port_t port, uint8_t pin);
+
+/* Reads an input pin. `level` is untouched unless STATUS_OK is returned. */
+mcu_status_t mcuco_gpio_get(mcuco_t *mcu, port_t port, uint8_t pin, level_t *level);
+
+/* Arms the trigger only. Set direction with mcuco_gpio_cfg first; attach an
+ * action with mcuco_gpio_irq_bind after. EDGE_OFF disarms and clears bindings. */
+mcu_status_t mcuco_gpio_irq_cfg(mcuco_t *mcu, edge_t edge, port_t port, uint8_t pin);
+
+/* Runs entirely on the MCU once this returns. `edge` must match the armed edge
+ * exactly. Rebinding without unbinding first fails with STATUS_ERR_BUSY. */
+mcu_status_t mcuco_gpio_irq_bind(mcuco_t *mcu, edge_t edge, port_t in_port, uint8_t in_pin,
+                                 action_t action, port_t out_port, uint8_t out_pin);
+
+/* Drops the action but leaves the trigger armed. */
+mcu_status_t mcuco_gpio_irq_unbind(mcuco_t *mcu, port_t port, uint8_t pin);
+
+/* All four pins in a group share its frequency. Reconfiguring a live group
+ * fails with STATUS_ERR_BUSY and changes nothing; release it first. */
+mcu_status_t mcuco_pwm_group_cfg(mcuco_t *mcu, uint32_t freq_hz, uint8_t group);
+
+/* The achieved frequency, which integer prescaler division can make differ
+ * from the one requested. Untouched unless STATUS_OK is returned. */
+mcu_status_t mcuco_pwm_group_get(mcuco_t *mcu, uint8_t group, uint32_t *achieved_hz);
+
+/* Stops the counter and frees all four of the group's channels. */
+mcu_status_t mcuco_pwm_group_release(mcuco_t *mcu, uint8_t group);
+
+/* Claims a pin for PWM. It comes up silent at 0.0% until mcuco_pwm_channel_set. */
+mcu_status_t mcuco_pwm_channel_cfg(mcuco_t *mcu, polarity_t polarity, port_t port,
+                                   uint8_t pin);
+
+/* Duty is tenths of a percent. Silence an output with a duty of 0, not a group
+ * release: stopping a counter freezes the pin at whatever level it held. */
+mcu_status_t mcuco_pwm_channel_set(mcuco_t *mcu, uint16_t duty, port_t port, uint8_t pin);
+
+/* Reads back a claimed pin's duty. Untouched unless STATUS_OK is returned. */
+mcu_status_t mcuco_pwm_channel_get(mcuco_t *mcu, port_t port, uint8_t pin, uint16_t *duty);
+
+/* Frees one pin, leaving the rest of the group running. */
+mcu_status_t mcuco_pwm_channel_release(mcuco_t *mcu, port_t port, uint8_t pin);
+
 #endif /* MCUCO_H */

@@ -2,9 +2,8 @@
 set -e
 
 SCRIPT_DIR=$(cd "$(dirname "$0")" && pwd)
-LIBRARY_DIR="${SCRIPT_DIR}/library"
-BUILD_DIR="${LIBRARY_DIR}/build"
-CROSS_BUILD_DIR="${LIBRARY_DIR}/build-arm64"
+BUILD_DIR="${SCRIPT_DIR}/build"
+CROSS_BUILD_DIR="${SCRIPT_DIR}/build-arm64"
 TOOLCHAIN_FILE="${SCRIPT_DIR}/cmake/toolchain-aarch64-linux-gnu.cmake"
 
 # The i.MX93 image's glibc. A library linked against anything newer will not
@@ -26,7 +25,7 @@ usage() {
 }
 
 cmd_build() {
-    cmake -S "${LIBRARY_DIR}" -B "${BUILD_DIR}"
+    cmake -S "${SCRIPT_DIR}" -B "${BUILD_DIR}"
     cmake --build "${BUILD_DIR}"
 }
 
@@ -34,7 +33,7 @@ cmd_build() {
 # actually aarch64, and that it asks for no glibc newer than the image ships.
 verify_cross_build() {
     local library
-    library=$(find "${CROSS_BUILD_DIR}" -maxdepth 1 -name 'libmcuco.so.*.*' | head -1)
+    library=$(find "${CROSS_BUILD_DIR}" -name 'libmcuco.so.*.*' | head -1)
 
     if [ -z "${library}" ]; then
         echo "No shared library found in ${CROSS_BUILD_DIR}." >&2
@@ -68,7 +67,7 @@ verify_cross_build() {
 }
 
 cmd_cross_build() {
-    cmake -S "${LIBRARY_DIR}" -B "${CROSS_BUILD_DIR}" --toolchain "${TOOLCHAIN_FILE}"
+    cmake -S "${SCRIPT_DIR}" -B "${CROSS_BUILD_DIR}" --toolchain "${TOOLCHAIN_FILE}"
     cmake --build "${CROSS_BUILD_DIR}"
     verify_cross_build
 }
@@ -79,7 +78,7 @@ cmd_clean() {
 }
 
 cmd_test() {
-    cmake -S "${LIBRARY_DIR}" -B "${BUILD_DIR}"
+    cmake -S "${SCRIPT_DIR}" -B "${BUILD_DIR}"
     cmake --build "${BUILD_DIR}"
     ctest --test-dir "${BUILD_DIR}" --verbose
 }
@@ -92,7 +91,7 @@ cmd_test_single() {
         name="${filter#*:}"
     fi
 
-    cmake -S "${LIBRARY_DIR}" -B "${BUILD_DIR}"
+    cmake -S "${SCRIPT_DIR}" -B "${BUILD_DIR}"
     cmake --build "${BUILD_DIR}"
 
     local cpputest_args=(-g "${group}")
@@ -102,7 +101,7 @@ cmd_test_single() {
 
     local output=""
     local result=0
-    output=$("${BUILD_DIR}/unit_tests" "${cpputest_args[@]}" -v 2>&1) || result=$?
+    output=$("${BUILD_DIR}/library/unit_tests" "${cpputest_args[@]}" -v 2>&1) || result=$?
 
     printf '%s\n' "${output}"
 
