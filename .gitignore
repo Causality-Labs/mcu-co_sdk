@@ -16,6 +16,9 @@ _deps/
 *.so
 *.so.*
 
+# Claude Code - personal overrides only; skills and settings.json are shared
+.claude/settings.local.json
+
 # Editors
 .vscode/
 .idea/

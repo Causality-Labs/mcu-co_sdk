@@ -4,27 +4,6 @@
 #include "command_transport.h"
 #include "uart.h"
 
-int open_port(const char *device_path)
-{
-    return uart_open(device_path);
-}
-
-void close_port(int fd)
-{
-    uart_close(fd);
-}
-
-mcu_status_t transmit_command(int fd, const uint8_t *frame, size_t frame_len)
-{
-    if (frame == NULL || frame_len == 0)
-        return STATUS_ERR_ARG;
-
-    if (uart_write(fd, frame, frame_len) < 0)
-        return STATUS_ERR_IO;
-
-    return STATUS_OK;
-}
-
 static long now_ms(void)
 {
     struct timespec now;
@@ -48,6 +27,27 @@ static mcu_status_t read_exactly(int fd, uint8_t *buffer, size_t len, long deadl
     if (bytes_read == -ETIMEDOUT)
         return STATUS_ERR_NO_RESPONSE;
     if (bytes_read < 0)
+        return STATUS_ERR_IO;
+
+    return STATUS_OK;
+}
+
+int open_port(const char *device_path)
+{
+    return uart_open(device_path);
+}
+
+void close_port(int fd)
+{
+    uart_close(fd);
+}
+
+mcu_status_t transmit_command(int fd, const uint8_t *frame, size_t frame_len)
+{
+    if (frame == NULL || frame_len == 0)
+        return STATUS_ERR_ARG;
+
+    if (uart_write(fd, frame, frame_len) < 0)
         return STATUS_ERR_IO;
 
     return STATUS_OK;
