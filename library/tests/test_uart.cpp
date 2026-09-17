@@ -81,7 +81,7 @@ TEST(Uart, CloseReleasesTheDescriptor)
 
     uart_close(duplicate);
 
-    LONGS_EQUAL(-EBADF, uart_write(duplicate, GPIO_SET_FRAME, sizeof GPIO_SET_FRAME));
+    LONGS_EQUAL(-EBADF, uart_write(duplicate, GPIO_SET_FRAME, sizeof(GPIO_SET_FRAME)));
 }
 
 // uart_open reports failure as a negative errno, so that value reaching
@@ -96,21 +96,21 @@ TEST(Uart, CloseIgnoresANegativeDescriptor)
 
 TEST(Uart, ReadsAWholeFrame)
 {
-    uint8_t buf[sizeof ACK_FRAME] = {0};
+    uint8_t buf[sizeof(ACK_FRAME)] = {0};
 
-    ssize_t written = write(master, ACK_FRAME, sizeof ACK_FRAME);
-    LONGS_EQUAL(sizeof ACK_FRAME, written);
+    ssize_t written = write(master, ACK_FRAME, sizeof(ACK_FRAME));
+    LONGS_EQUAL(sizeof(ACK_FRAME), written);
 
-    LONGS_EQUAL(sizeof ACK_FRAME, uart_read(port, buf, sizeof ACK_FRAME, 500));
-    MEMCMP_EQUAL(ACK_FRAME, buf, sizeof ACK_FRAME);
+    LONGS_EQUAL(sizeof(ACK_FRAME), uart_read(port, buf, sizeof(ACK_FRAME), 500));
+    MEMCMP_EQUAL(ACK_FRAME, buf, sizeof(ACK_FRAME));
 }
 
 TEST(Uart, ReadTimesOutWhenNothingArrives)
 {
-    uint8_t buf[sizeof ACK_FRAME] = {0};
+    uint8_t buf[sizeof(ACK_FRAME)] = {0};
 
     long started = now_ms();
-    LONGS_EQUAL(-ETIMEDOUT, uart_read(port, buf, sizeof ACK_FRAME, 200));
+    LONGS_EQUAL(-ETIMEDOUT, uart_read(port, buf, sizeof(ACK_FRAME), 200));
     long elapsed = now_ms() - started;
 
     CHECK(elapsed >= 180);
@@ -121,24 +121,24 @@ TEST(Uart, ReadTimesOutWhenNothingArrives)
 // a frame split across many reads must still assemble.
 TEST(Uart, ReadAssemblesAFrameDeliveredOneByteAtATime)
 {
-    uint8_t buf[sizeof ACK_FRAME] = {0};
+    uint8_t buf[sizeof(ACK_FRAME)] = {0};
 
-    write_slowly(master, ACK_FRAME, sizeof ACK_FRAME, 20);
+    write_slowly(master, ACK_FRAME, sizeof(ACK_FRAME), 20);
 
-    LONGS_EQUAL(sizeof ACK_FRAME, uart_read(port, buf, sizeof ACK_FRAME, 2000));
-    MEMCMP_EQUAL(ACK_FRAME, buf, sizeof ACK_FRAME);
+    LONGS_EQUAL(sizeof(ACK_FRAME), uart_read(port, buf, sizeof(ACK_FRAME), 2000));
+    MEMCMP_EQUAL(ACK_FRAME, buf, sizeof(ACK_FRAME));
 }
 
 // The timeout bounds the whole call, so a partial read must not restart it.
 // Five bytes 40ms apart cannot fit in 100ms, however many reads it takes.
 TEST(Uart, ReadDeadlineIsNotResetByAPartialRead)
 {
-    uint8_t buf[sizeof ACK_FRAME] = {0};
+    uint8_t buf[sizeof(ACK_FRAME)] = {0};
 
-    write_slowly(master, ACK_FRAME, sizeof ACK_FRAME, 40);
+    write_slowly(master, ACK_FRAME, sizeof(ACK_FRAME), 40);
 
     long started = now_ms();
-    LONGS_EQUAL(-ETIMEDOUT, uart_read(port, buf, sizeof ACK_FRAME, 100));
+    LONGS_EQUAL(-ETIMEDOUT, uart_read(port, buf, sizeof(ACK_FRAME), 100));
     long elapsed = now_ms() - started;
 
     CHECK(elapsed < 250);
@@ -148,14 +148,14 @@ TEST(Uart, ReadDeadlineIsNotResetByAPartialRead)
 
 TEST(Uart, WritesTheExactBytesToThePort)
 {
-    uint8_t echoed[sizeof GPIO_SET_FRAME] = {0};
+    uint8_t echoed[sizeof(GPIO_SET_FRAME)] = {0};
 
-    LONGS_EQUAL(sizeof GPIO_SET_FRAME,
-                uart_write(port, GPIO_SET_FRAME, sizeof GPIO_SET_FRAME));
+    LONGS_EQUAL(sizeof(GPIO_SET_FRAME),
+                uart_write(port, GPIO_SET_FRAME, sizeof(GPIO_SET_FRAME)));
 
-    ssize_t read_back = read(master, echoed, sizeof GPIO_SET_FRAME);
-    LONGS_EQUAL(sizeof GPIO_SET_FRAME, read_back);
-    MEMCMP_EQUAL(GPIO_SET_FRAME, echoed, sizeof GPIO_SET_FRAME);
+    ssize_t read_back = read(master, echoed, sizeof(GPIO_SET_FRAME));
+    LONGS_EQUAL(sizeof(GPIO_SET_FRAME), read_back);
+    MEMCMP_EQUAL(GPIO_SET_FRAME, echoed, sizeof(GPIO_SET_FRAME));
 }
 
 TEST(Uart, WriteReportsErrnoForAClosedDescriptor)
@@ -163,5 +163,5 @@ TEST(Uart, WriteReportsErrnoForAClosedDescriptor)
     int closed = dup(port);
     close(closed);
 
-    LONGS_EQUAL(-EBADF, uart_write(closed, GPIO_SET_FRAME, sizeof GPIO_SET_FRAME));
+    LONGS_EQUAL(-EBADF, uart_write(closed, GPIO_SET_FRAME, sizeof(GPIO_SET_FRAME)));
 }

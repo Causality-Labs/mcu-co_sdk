@@ -75,4 +75,7 @@ mcuco_t *mcuco_open(const char *device_path, int timeout_ms);
 /* Closes the port and frees the handle. A NULL mcu is ignored. */
 void mcuco_close(mcuco_t *mcu);
 
+/* Sets a pin's direction. */
+mcu_status_t mcuco_gpio_cfg(mcuco_t *mcu, dir_t dir, port_t port, uint8_t pin);
+
 #endif /* MCUCO_H */

@@ -12,6 +12,9 @@ set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
 add_library(mcuco SHARED
   src/uart.c
+  src/crc16.c
+  src/protocol.c
+  src/command_transport.c
   src/mcuco.c
 )
 
@@ -53,6 +56,10 @@ if(NOT CMAKE_CROSSCOMPILING)
   add_executable(unit_tests
     tests/AllTests.cpp
     tests/test_uart.cpp
+    tests/test_crc16.cpp
+    tests/test_protocol.cpp
+    tests/test_command_transport.cpp
+    tests/test_mcuco.cpp
   )
   target_link_libraries(unit_tests PRIVATE mcuco CppUTest util) # util: openpty
 

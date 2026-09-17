@@ -115,6 +115,9 @@ strip the high bit of the `0xA5` SOF and rewrite CR/LF bytes that appear in CRCs
   them, public functions appear in the same order as their declarations in the `.h`.
 - **Descriptive variable names.** No `t`, `n`, `rc`, `buf`-adjacent single letters.
   Put the unit in the name where one exists (`deadline_ms`, `time_left_ms`).
+- **Always parenthesize `sizeof`** — `sizeof(frame)`, not `sizeof frame`. Parens are
+  only required for a type operand, but writing them always is one rule instead of
+  two.
 - **No `goto`.** If cleanup seems to need one, the function is doing two jobs — split
   it so each owns one resource, as `uart_open` / `configure_port` do.
 - Error handling is return-code based: `0` or a positive count on success, a negative

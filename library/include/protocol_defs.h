@@ -27,6 +27,18 @@
 #define PROTOCOL_MIN_RESPONSE_FRAME (PROTOCOL_RESPONSE_OVERHEAD + PROTOCOL_MIN_RESPONSE_LEN)
 #define PROTOCOL_MAX_RESPONSE_FRAME (PROTOCOL_RESPONSE_OVERHEAD + PROTOCOL_MAX_RESPONSE_LEN)
 
+/* Byte positions within a frame. The trailing CRC is at frame_len - 2, which
+ * varies with the payload, so it has no fixed index. */
+#define COMMAND_SOF_IDX     0U
+#define COMMAND_OPCODE_IDX  1U
+#define COMMAND_LEN_IDX     2U
+#define COMMAND_PAYLOAD_IDX 3U
+
+#define RESPONSE_SOF_IDX  0U
+#define RESPONSE_LEN_IDX  1U
+#define RESPONSE_ACK_IDX  2U
+#define RESPONSE_DATA_IDX 3U
+
 /* Fixed on the wire - never renumber. Thirteen opcodes cover fourteen CLI
  * commands: `gpio irq cfg off` is GPIO_IRQ_CFG with an edge of 0. */
 typedef enum
