@@ -17,11 +17,23 @@ usage() {
     echo "  -b           Configure and build the library natively"
     echo "  -a           Cross-compile for the i.MX93 (aarch64), then verify the result"
     echo "  -c           Remove all build directories"
+    echo "  -F           Format all sources with clang-format"
+    echo "  -s <tool>    Run static analysis (tool: clang, cpp, both)"
     echo "  -t [filter]  Build and run the unit test suite."
     echo "                 With filter (GroupName or GroupName:TestName), run just that"
     echo "                 group/test instead of the full suite."
     echo "  -h           Print this help message"
     exit 0
+}
+
+# `cmake -S -B` re-runs configure every time, and configure re-runs CppUTest's
+# CMakeLists, which prints a 37-line banner to stderr. Skip it when the tree is
+# already configured: `cmake --build` reconfigures by itself if a CMakeLists
+# changed, so nothing is lost.
+ensure_configured() {
+    if [ ! -f "${BUILD_DIR}/CMakeCache.txt" ]; then
+        cmake -S "${SCRIPT_DIR}" -B "${BUILD_DIR}"
+    fi
 }
 
 cmd_build() {
@@ -72,13 +84,45 @@ cmd_cross_build() {
     verify_cross_build
 }
 
+cmd_format() {
+    ensure_configured
+    cmake --build "${BUILD_DIR}" --target format
+}
+
+# Analysis is off in a normal build: it roughly triples configure+build time and
+# has nothing to say most of the time.
+cmd_static_analysis() {
+    local cert="OFF"
+    local cppcheck="OFF"
+
+    case "$1" in
+        clang) cert="ON" ;;
+        cpp)   cppcheck="ON" ;;
+        both)  cert="ON"; cppcheck="ON" ;;
+        *)
+            echo "Unknown analysis tool: $1. Use clang, cpp, or both." >&2
+            exit 1
+            ;;
+    esac
+
+    local analysis_dir="${SCRIPT_DIR}/build-analysis"
+
+    # clang-tidy and cppcheck run while compiling, so a warm tree compiles
+    # nothing and analyses nothing while still reporting success. Start clean.
+    rm -rf "${analysis_dir}"
+
+    cmake -S "${SCRIPT_DIR}" -B "${analysis_dir}" \
+        -DENABLE_CERT_CHECK="${cert}" -DENABLE_CPPCHECK="${cppcheck}"
+    cmake --build "${analysis_dir}"
+}
+
 cmd_clean() {
-    rm -rf "${BUILD_DIR}" "${CROSS_BUILD_DIR}"
+    rm -rf "${BUILD_DIR}" "${CROSS_BUILD_DIR}" "${SCRIPT_DIR}/build-analysis"
     echo "Build directories removed."
 }
 
 cmd_test() {
-    cmake -S "${SCRIPT_DIR}" -B "${BUILD_DIR}"
+    ensure_configured
     cmake --build "${BUILD_DIR}"
     ctest --test-dir "${BUILD_DIR}" --verbose
 }
@@ -91,7 +135,7 @@ cmd_test_single() {
         name="${filter#*:}"
     fi
 
-    cmake -S "${SCRIPT_DIR}" -B "${BUILD_DIR}"
+    ensure_configured
     cmake --build "${BUILD_DIR}"
 
     local cpputest_args=(-g "${group}")
@@ -119,7 +163,7 @@ if [ $# -eq 0 ]; then
     usage
 fi
 
-while getopts "abcth" opt; do
+while getopts "abcFs:th" opt; do
     case "${opt}" in
         a)
             cmd_cross_build
@@ -129,6 +173,12 @@ while getopts "abcth" opt; do
             ;;
         c)
             cmd_clean
+            ;;
+        F)
+            cmd_format
+            ;;
+        s)
+            cmd_static_analysis "${OPTARG}"
             ;;
         t)
             if [[ -n "${!OPTIND-}" && "${!OPTIND}" != -* ]]; then

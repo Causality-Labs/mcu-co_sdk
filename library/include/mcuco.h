@@ -90,8 +90,8 @@ mcu_status_t mcuco_gpio_irq_cfg(mcuco_t *mcu, edge_t edge, port_t port, uint8_t 
 
 /* Runs entirely on the MCU once this returns. `edge` must match the armed edge
  * exactly. Rebinding without unbinding first fails with STATUS_ERR_BUSY. */
-mcu_status_t mcuco_gpio_irq_bind(mcuco_t *mcu, edge_t edge, port_t in_port, uint8_t in_pin,
-                                 action_t action, port_t out_port, uint8_t out_pin);
+mcu_status_t mcuco_gpio_irq_bind(mcuco_t *mcu, edge_t edge, port_t in_port, uint8_t in_pin, action_t action, port_t out_port,
+                                 uint8_t out_pin);
 
 /* Drops the action but leaves the trigger armed. */
 mcu_status_t mcuco_gpio_irq_unbind(mcuco_t *mcu, port_t port, uint8_t pin);
@@ -108,8 +108,7 @@ mcu_status_t mcuco_pwm_group_get(mcuco_t *mcu, uint8_t group, uint32_t *achieved
 mcu_status_t mcuco_pwm_group_release(mcuco_t *mcu, uint8_t group);
 
 /* Claims a pin for PWM. It comes up silent at 0.0% until mcuco_pwm_channel_set. */
-mcu_status_t mcuco_pwm_channel_cfg(mcuco_t *mcu, polarity_t polarity, port_t port,
-                                   uint8_t pin);
+mcu_status_t mcuco_pwm_channel_cfg(mcuco_t *mcu, polarity_t polarity, port_t port, uint8_t pin);
 
 /* Duty is tenths of a percent. Silence an output with a duty of 0, not a group
  * release: stopping a counter freezes the pin at whatever level it held. */

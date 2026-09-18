@@ -1,0 +1,8 @@
+// Cross-compilation: system headers are not in the ARM sysroot
+missingIncludeSystem
+
+// Consequence of missingIncludeSystem - suppression never fires
+unmatchedSuppression
+
+// The library exposes API the examples do not all call
+unusedFunction

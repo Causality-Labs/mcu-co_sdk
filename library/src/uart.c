@@ -1,3 +1,6 @@
+/* glibc's documented feature-test macro: reserved-identifier rules do not
+ * apply to the ones the implementation asks you to define. */
+/* NOLINTNEXTLINE(cert-dcl37-c,cert-dcl51-cpp) */
 #define _DEFAULT_SOURCE /* CRTSCTS, cfmakeraw */
 
 #include <errno.h>
@@ -16,12 +19,14 @@ static int configure_port(int fd)
 {
     struct termios tty;
     if (tcgetattr(fd, &tty) != 0)
+    {
         return -errno;
+    }
 
     cfmakeraw(&tty);
 
     tty.c_cflag |= (tcflag_t)(CLOCAL | CREAD);
-    tty.c_cflag &= (tcflag_t)~(PARENB | CSTOPB | CRTSCTS);
+    tty.c_cflag &= (tcflag_t) ~(PARENB | CSTOPB | CRTSCTS);
     tty.c_cflag &= (tcflag_t)~CSIZE;
     tty.c_cflag |= (tcflag_t)CS8;
 
@@ -31,29 +36,45 @@ static int configure_port(int fd)
     tty.c_cc[VTIME] = 0;
 
     if (cfsetispeed(&tty, MCU_BAUD) != 0)
+    {
         return -errno;
+    }
     if (cfsetospeed(&tty, MCU_BAUD) != 0)
+    {
         return -errno;
+    }
 
     if (tcsetattr(fd, TCSANOW, &tty) != 0)
+    {
         return -errno;
+    }
 
     /* tcsetattr succeeds if it applied ANY change, not all of them. */
     struct termios actual;
     if (tcgetattr(fd, &actual) != 0)
+    {
         return -errno;
+    }
 
     if ((actual.c_cflag & CSIZE) != CS8)
+    {
         return -EINVAL;
+    }
     if ((actual.c_cflag & (PARENB | CSTOPB)) != 0)
+    {
         return -EINVAL;
+    }
     if (cfgetospeed(&actual) != MCU_BAUD)
+    {
         return -EINVAL;
+    }
 
     tcflush(fd, TCIFLUSH);
 
     if (fcntl(fd, F_SETFL, 0) != 0)
+    {
         return -errno;
+    }
 
     return 0;
 }
@@ -74,7 +95,9 @@ int uart_open(const char *device_path)
      * O_NONBLOCK: skip the carrier wait; cleared once CLOCAL is set. */
     int fd = open(device_path, O_RDWR | O_NOCTTY | O_NONBLOCK);
     if (fd < 0)
+    {
         return -errno;
+    }
 
     int status = configure_port(fd);
     if (status != 0)
@@ -89,14 +112,16 @@ int uart_open(const char *device_path)
 void uart_close(int fd)
 {
     if (fd < 0)
+    {
         return;
+    }
 
     close(fd);
 }
 
 ssize_t uart_read(int fd, uint8_t *buf, size_t len, int timeout_ms)
 {
-    long deadline_ms = now_ms() + timeout_ms;
+    long deadline_ms  = now_ms() + timeout_ms;
     size_t total_read = 0;
 
     while (total_read < len)
@@ -104,7 +129,9 @@ ssize_t uart_read(int fd, uint8_t *buf, size_t len, int timeout_ms)
         long time_left_ms = deadline_ms - now_ms();
 
         if (time_left_ms <= 0)
+        {
             return -ETIMEDOUT;
+        }
 
         struct pollfd poll_fd = {.fd = fd, .events = POLLIN, .revents = 0};
 
@@ -113,28 +140,38 @@ ssize_t uart_read(int fd, uint8_t *buf, size_t len, int timeout_ms)
         if (ready < 0)
         {
             if (errno == EINTR)
+            {
                 continue;
+            }
             return -errno;
         }
 
         if (ready == 0)
+        {
             return -ETIMEDOUT;
+        }
 
         /* POLLIN was the only request, so anything else is HUP or ERR. */
         if ((poll_fd.revents & POLLIN) == 0)
+        {
             return -ENOTCONN;
+        }
 
         ssize_t bytes_read = read(fd, buf + total_read, len - total_read);
 
         if (bytes_read < 0)
         {
             if (errno == EINTR || errno == EAGAIN)
+            {
                 continue;
+            }
             return -errno;
         }
 
         if (bytes_read == 0)
+        {
             return -ENOTCONN;
+        }
 
         total_read += (size_t)bytes_read;
     }
@@ -151,7 +188,9 @@ ssize_t uart_write(int fd, const uint8_t *buf, size_t len)
         if (bytes_written < 0)
         {
             if (errno == EINTR)
+            {
                 continue;
+            }
             return -errno;
         }
 

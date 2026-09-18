@@ -1,0 +1,9 @@
+Checks: "cert-*,readability-braces-around-statements,-clang-analyzer-security.insecureAPI.DeprecatedOrUnsafeBufferHandling"
+WarningsAsErrors: "cert-*,readability-braces-around-statements"
+HeaderFilterRegex: "library/(include|src)/.*"
+
+# Braces on every if/for/while, even single statements - clang-format 14 has no
+# InsertBraces, so this check both applies and enforces the rule.
+#
+# The disabled check wants memset_s over memset. That is C11 Annex K, which is
+# optional and glibc does not implement it, so the advice is unactionable.

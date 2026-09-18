@@ -15,9 +15,9 @@
  * needs no knowledge of which command was sent. */
 typedef struct
 {
-    bool    ack;
+    bool ack;
     uint8_t data[PROTOCOL_MAX_RESPONSE_DATA];
-    size_t  data_len;
+    size_t data_len;
 } protocol_response_t;
 
 /* One builder per command. Each writes the complete frame - SOF, opcode,
@@ -26,47 +26,36 @@ typedef struct
  *
  * `buffer` must hold at least PROTOCOL_MAX_COMMAND_FRAME bytes. Returns the
  * number of bytes written, or a negative mcu_status_t. */
-ssize_t protocol_gpio_cfg(dir_t dir, port_t port, uint8_t pin, uint8_t *buffer,
-                          size_t buffer_len);
+ssize_t protocol_gpio_cfg(dir_t dir, port_t port, uint8_t pin, uint8_t *buffer, size_t buffer_len);
 
-ssize_t protocol_gpio_set(level_t level, port_t port, uint8_t pin, uint8_t *buffer,
-                          size_t buffer_len);
+ssize_t protocol_gpio_set(level_t level, port_t port, uint8_t pin, uint8_t *buffer, size_t buffer_len);
 
 ssize_t protocol_gpio_get(port_t port, uint8_t pin, uint8_t *buffer, size_t buffer_len);
 
-ssize_t protocol_gpio_irq_cfg(edge_t edge, port_t port, uint8_t pin, uint8_t *buffer,
-                              size_t buffer_len);
+ssize_t protocol_gpio_irq_cfg(edge_t edge, port_t port, uint8_t pin, uint8_t *buffer, size_t buffer_len);
 
-ssize_t protocol_gpio_irq_bind(edge_t edge, port_t in_port, uint8_t in_pin,
-                               action_t action, port_t out_port, uint8_t out_pin,
-                               uint8_t *buffer, size_t buffer_len);
+ssize_t protocol_gpio_irq_bind(edge_t edge, port_t in_port, uint8_t in_pin, action_t action, port_t out_port,
+                               uint8_t out_pin, uint8_t *buffer, size_t buffer_len);
 
-ssize_t protocol_gpio_irq_unbind(port_t port, uint8_t pin, uint8_t *buffer,
-                                 size_t buffer_len);
+ssize_t protocol_gpio_irq_unbind(port_t port, uint8_t pin, uint8_t *buffer, size_t buffer_len);
 
-ssize_t protocol_pwm_group_cfg(uint32_t freq_hz, uint8_t group, uint8_t *buffer,
-                               size_t buffer_len);
+ssize_t protocol_pwm_group_cfg(uint32_t freq_hz, uint8_t group, uint8_t *buffer, size_t buffer_len);
 
 ssize_t protocol_pwm_group_get(uint8_t group, uint8_t *buffer, size_t buffer_len);
 
 ssize_t protocol_pwm_group_release(uint8_t group, uint8_t *buffer, size_t buffer_len);
 
-ssize_t protocol_pwm_channel_cfg(polarity_t polarity, port_t port, uint8_t pin,
-                                 uint8_t *buffer, size_t buffer_len);
+ssize_t protocol_pwm_channel_cfg(polarity_t polarity, port_t port, uint8_t pin, uint8_t *buffer, size_t buffer_len);
 
-ssize_t protocol_pwm_channel_set(uint16_t duty, port_t port, uint8_t pin,
-                                 uint8_t *buffer, size_t buffer_len);
+ssize_t protocol_pwm_channel_set(uint16_t duty, port_t port, uint8_t pin, uint8_t *buffer, size_t buffer_len);
 
-ssize_t protocol_pwm_channel_get(port_t port, uint8_t pin, uint8_t *buffer,
-                                 size_t buffer_len);
+ssize_t protocol_pwm_channel_get(port_t port, uint8_t pin, uint8_t *buffer, size_t buffer_len);
 
-ssize_t protocol_pwm_channel_release(port_t port, uint8_t pin, uint8_t *buffer,
-                                     size_t buffer_len);
+ssize_t protocol_pwm_channel_release(port_t port, uint8_t pin, uint8_t *buffer, size_t buffer_len);
 
 /* Decodes one complete candidate frame. Verifies SOF, LEN and the CRC before
  * filling `response`; a frame that fails any of those is STATUS_ERR_BAD_FRAME.
  * Bytes past the frame are ignored. */
-mcu_status_t protocol_parse_response(const uint8_t *frame, size_t frame_len,
-                                     protocol_response_t *response);
+mcu_status_t protocol_parse_response(const uint8_t *frame, size_t frame_len, protocol_response_t *response);
 
 #endif /* PROTOCOL_H */

@@ -28,26 +28,22 @@ static mcu_status_t bind_button_to_led(mcuco_t *mcu)
 {
     mcu_status_t status;
 
-    status = step("gpio cfg input  C 13 (button)",
-                  mcuco_gpio_cfg(mcu, DIR_INPUT, BUTTON_PORT, BUTTON_PIN));
+    status = step("gpio cfg input  C 13 (button)", mcuco_gpio_cfg(mcu, DIR_INPUT, BUTTON_PORT, BUTTON_PIN));
     if (status != STATUS_OK)
         return status;
 
-    status = step("gpio cfg output A 5  (LD2)",
-                  mcuco_gpio_cfg(mcu, DIR_OUTPUT, LED_PORT, LED_PIN));
+    status = step("gpio cfg output A 5  (LD2)", mcuco_gpio_cfg(mcu, DIR_OUTPUT, LED_PORT, LED_PIN));
     if (status != STATUS_OK)
         return status;
 
-    status = step("gpio irq cfg both C 13",
-                  mcuco_gpio_irq_cfg(mcu, EDGE_BOTH, BUTTON_PORT, BUTTON_PIN));
+    status = step("gpio irq cfg both C 13", mcuco_gpio_irq_cfg(mcu, EDGE_BOTH, BUTTON_PORT, BUTTON_PIN));
     if (status != STATUS_OK)
         return status;
 
     /* TOGGLE is edge-agnostic, so one binding mirrors the button on the LED
      * without the ISR needing to know which edge fired. */
     return step("gpio irq bind both C 13 toggle A 5",
-                mcuco_gpio_irq_bind(mcu, EDGE_BOTH, BUTTON_PORT, BUTTON_PIN,
-                                    ACTION_TOGGLE, LED_PORT, LED_PIN));
+                mcuco_gpio_irq_bind(mcu, EDGE_BOTH, BUTTON_PORT, BUTTON_PIN, ACTION_TOGGLE, LED_PORT, LED_PIN));
 }
 
 int main(int argc, char **argv)

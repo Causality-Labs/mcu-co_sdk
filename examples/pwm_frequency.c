@@ -14,7 +14,7 @@
  * there is no release command yet. */
 static const struct
 {
-    uint8_t  group;
+    uint8_t group;
     uint32_t freq_hz;
 } REQUESTS[] = {
     {0, 1000},
@@ -30,25 +30,24 @@ static void report(uint8_t group, uint32_t requested_hz, mcuco_t *mcu)
      * says something useful. */
     if (status != STATUS_OK && status != STATUS_ERR_BUSY)
     {
-        printf("group %u: requested %7u Hz -> cfg %s\n", group, requested_hz,
-               status_name(status));
+        printf("group %u: requested %7u Hz -> cfg %s\n", group, requested_hz, status_name(status));
         return;
     }
 
-    uint32_t achieved_hz = 0;
+    uint32_t achieved_hz     = 0;
     mcu_status_t read_status = mcuco_pwm_group_get(mcu, group, &achieved_hz);
 
     if (read_status != STATUS_OK)
     {
-        printf("group %u: requested %7u Hz -> cfg %s, get %s\n", group, requested_hz,
-               status_name(status), status_name(read_status));
+        printf("group %u: requested %7u Hz -> cfg %s, get %s\n", group, requested_hz, status_name(status),
+               status_name(read_status));
         return;
     }
 
     long drift = (long)achieved_hz - (long)requested_hz;
 
-    printf("group %u: requested %7u Hz -> cfg %-5s achieved %7u Hz  (%+ld)\n", group,
-           requested_hz, status_name(status), achieved_hz, drift);
+    printf("group %u: requested %7u Hz -> cfg %-5s achieved %7u Hz  (%+ld)\n", group, requested_hz, status_name(status),
+           achieved_hz, drift);
 }
 
 int main(int argc, char **argv)

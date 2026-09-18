@@ -8,7 +8,9 @@ uint16_t crc16_compute(const uint8_t *data, size_t len)
     uint16_t crc = CRC16_SEED;
 
     if (data == NULL)
+    {
         return crc;
+    }
 
     for (size_t i = 0; i < len; i++)
     {
@@ -17,9 +19,13 @@ uint16_t crc16_compute(const uint8_t *data, size_t len)
         for (int bit = 0; bit < 8; bit++)
         {
             if ((crc & 0x8000U) != 0U)
+            {
                 crc = (uint16_t)((uint16_t)(crc << 1) ^ CRC16_POLYNOMIAL);
+            }
             else
+            {
                 crc = (uint16_t)(crc << 1);
+            }
         }
     }
 
