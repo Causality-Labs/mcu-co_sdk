@@ -2,7 +2,7 @@
 #include <stddef.h>
 #include <stdlib.h>
 #include <string.h>
-#include <unistd.h>
+#include <time.h>
 
 #include "command_transport.h"
 #include "endianess.h"
@@ -11,7 +11,7 @@
 
 /* USB-serial adapters drop bytes written immediately after open, which would
  * make the probe below fail on a board that is present and working. */
-#define SETTLE_US 100000
+#define SETTLE_NS 100000000L
 
 struct mcuco
 {
@@ -103,7 +103,8 @@ mcuco_t *mcuco_open(const char *device_path, int timeout_ms)
     mcu->fd         = fd;
     mcu->timeout_ms = timeout_ms;
 
-    usleep(SETTLE_US);
+    struct timespec settle = {.tv_sec = 0, .tv_nsec = SETTLE_NS};
+    nanosleep(&settle, NULL);
 
     /* Confirm mcu-co is actually on the other end rather than handing back a
      * handle to whatever device happened to own this path. */
