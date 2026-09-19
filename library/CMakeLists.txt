@@ -10,6 +10,7 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 add_library(mcuco SHARED
   src/uart.c
   src/crc16.c
+  src/endianess.c
   src/protocol.c
   src/command_transport.c
   src/mcuco.c

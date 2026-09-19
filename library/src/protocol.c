@@ -1,6 +1,7 @@
 #include <stddef.h>
 
 #include "crc16.h"
+#include "endianess.h"
 #include "protocol.h"
 
 static bool is_valid_port(port_t port)
@@ -18,19 +19,6 @@ static bool is_valid_group(uint8_t group)
     return group <= GROUP_MAX;
 }
 
-static void put_u32_le(uint8_t *destination, uint32_t value)
-{
-    destination[0] = (uint8_t)(value & 0xFFU);
-    destination[1] = (uint8_t)((value >> 8) & 0xFFU);
-    destination[2] = (uint8_t)((value >> 16) & 0xFFU);
-    destination[3] = (uint8_t)((value >> 24) & 0xFFU);
-}
-
-static void put_u16_le(uint8_t *destination, uint16_t value)
-{
-    destination[0] = (uint8_t)(value & 0xFFU);
-    destination[1] = (uint8_t)((value >> 8) & 0xFFU);
-}
 
 /* SOF · OPCODE · LEN · PAYLOAD · CRC_L · CRC_H, with the CRC over everything
  * but SOF and the CRC bytes themselves, little-endian on the wire. */

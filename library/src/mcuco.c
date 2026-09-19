@@ -4,6 +4,7 @@
 #include <string.h>
 
 #include "command_transport.h"
+#include "endianess.h"
 #include "mcuco.h"
 #include "protocol.h"
 
@@ -12,11 +13,6 @@ struct mcuco
     int fd;
     int timeout_ms;
 };
-
-static uint32_t get_u32_le(const uint8_t *source)
-{
-    return (uint32_t)source[0] | ((uint32_t)source[1] << 8) | ((uint32_t)source[2] << 16) | ((uint32_t)source[3] << 24);
-}
 
 /* A NACK carries the firmware's own status code, so it becomes the return
  * value untranslated. */
@@ -37,10 +33,6 @@ static mcu_status_t status_from_response(const protocol_response_t *response)
 
 /* Sends an already-built frame and decodes the reply. `response` may be NULL
  * for commands that return no data. */
-static uint16_t get_u16_le(const uint8_t *source)
-{
-    return (uint16_t)((uint16_t)source[0] | ((uint16_t)source[1] << 8));
-}
 
 static mcu_status_t exchange(mcuco_t *mcu, const uint8_t *frame, ssize_t frame_len, protocol_response_t *response)
 {
@@ -250,7 +242,10 @@ mcu_status_t mcuco_pwm_group_get(mcuco_t *mcu, uint8_t group, uint32_t *achieved
         return STATUS_ERR_BAD_FRAME;
     }
 
-    *achieved_hz = get_u32_le(response.data);
+    if (get_u32_le(response.data, achieved_hz) < 0)
+    {
+        return STATUS_ERR_ARG;
+    }
 
     return STATUS_OK;
 }
@@ -317,7 +312,10 @@ mcu_status_t mcuco_pwm_channel_get(mcuco_t *mcu, port_t port, uint8_t pin, uint1
         return STATUS_ERR_BAD_FRAME;
     }
 
-    *duty = get_u16_le(response.data);
+    if (get_u16_le(response.data, duty) < 0)
+    {
+        return STATUS_ERR_ARG;
+    }
 
     return STATUS_OK;
 }
