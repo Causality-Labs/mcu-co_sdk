@@ -54,6 +54,11 @@ static ssize_t build_frame(protocol_opcode_t opcode, const uint8_t *payload, siz
     return (ssize_t)frame_len;
 }
 
+ssize_t protocol_probe(uint8_t *buffer, size_t buffer_len)
+{
+    return build_frame(OPCODE_PROBE, NULL, 0, buffer, buffer_len);
+}
+
 ssize_t protocol_gpio_cfg(dir_t dir, port_t port, uint8_t pin, uint8_t *buffer, size_t buffer_len)
 {
     if (dir != DIR_INPUT && dir != DIR_OUTPUT)
@@ -138,6 +143,20 @@ ssize_t protocol_pwm_group_get(uint8_t group, uint8_t *buffer, size_t buffer_len
     payload[0] = group;
 
     return build_frame(OPCODE_PWM_GROUP_GET, payload, sizeof(payload), buffer, buffer_len);
+}
+
+ssize_t protocol_gpio_toggle(port_t port, uint8_t pin, uint8_t *buffer, size_t buffer_len)
+{
+    if (!is_valid_port(port) || !is_valid_pin(pin))
+    {
+        return -STATUS_ERR_ARG;
+    }
+
+    uint8_t payload[2];
+    payload[0] = (uint8_t)port;
+    payload[1] = pin;
+
+    return build_frame(OPCODE_GPIO_TOGGLE, payload, sizeof(payload), buffer, buffer_len);
 }
 
 ssize_t protocol_gpio_irq_cfg(edge_t edge, port_t port, uint8_t pin, uint8_t *buffer, size_t buffer_len)

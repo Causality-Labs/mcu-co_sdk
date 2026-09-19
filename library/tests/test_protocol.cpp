@@ -446,3 +446,36 @@ TEST(Protocol, PwmGroupReleaseMatchesTheWorkedFrameInTheProtocolDoc)
     LONGS_EQUAL(sizeof(expected), protocol_pwm_group_release(0, frame, sizeof(frame)));
     MEMCMP_EQUAL(expected, frame, sizeof(expected));
 }
+
+/* --- protocol_probe --- */
+
+// Section 0 of mcu-co_Protocol.md: "probe". The only command with no payload.
+TEST(Protocol, ProbeMatchesTheWorkedFrameInTheProtocolDoc)
+{
+    const uint8_t expected[] = {0xA5, 0x10, 0x00, 0x7C, 0x1E};
+    uint8_t frame[PROTOCOL_MAX_COMMAND_FRAME] = {0};
+
+    LONGS_EQUAL(sizeof(expected), protocol_probe(frame, sizeof(frame)));
+    MEMCMP_EQUAL(expected, frame, sizeof(expected));
+}
+
+/* --- protocol_gpio_toggle --- */
+
+// Section 6.5: "gpio toggle A 5". Payload is [PORT, PIN] - no qualifier,
+// because unlike gpio set there is nothing to choose.
+TEST(Protocol, GpioToggleMatchesTheWorkedFrameInTheProtocolDoc)
+{
+    const uint8_t expected[] = {0xA5, 0x36, 0x02, 0x00, 0x05, 0x75, 0xB1};
+    uint8_t frame[PROTOCOL_MAX_COMMAND_FRAME] = {0};
+
+    LONGS_EQUAL(sizeof(expected), protocol_gpio_toggle(PORT_A, 5, frame, sizeof(frame)));
+    MEMCMP_EQUAL(expected, frame, sizeof(expected));
+}
+
+TEST(Protocol, GpioToggleRejectsAPinAboveTheMaximum)
+{
+    uint8_t frame[PROTOCOL_MAX_COMMAND_FRAME] = {0};
+
+    LONGS_EQUAL(-STATUS_ERR_ARG,
+                protocol_gpio_toggle(PORT_A, PIN_MAX + 1, frame, sizeof(frame)));
+}

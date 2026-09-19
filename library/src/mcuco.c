@@ -2,11 +2,16 @@
 #include <stddef.h>
 #include <stdlib.h>
 #include <string.h>
+#include <unistd.h>
 
 #include "command_transport.h"
 #include "endianess.h"
 #include "mcuco.h"
 #include "protocol.h"
+
+/* USB-serial adapters drop bytes written immediately after open, which would
+ * make the probe below fail on a board that is present and working. */
+#define SETTLE_US 100000
 
 struct mcuco
 {
@@ -98,6 +103,18 @@ mcuco_t *mcuco_open(const char *device_path, int timeout_ms)
     mcu->fd         = fd;
     mcu->timeout_ms = timeout_ms;
 
+    usleep(SETTLE_US);
+
+    /* Confirm mcu-co is actually on the other end rather than handing back a
+     * handle to whatever device happened to own this path. */
+    mcu_status_t status = mcuco_probe(mcu);
+    if (status != STATUS_OK)
+    {
+        mcuco_close(mcu);
+        errno = (status == STATUS_ERR_NO_RESPONSE) ? ETIMEDOUT : EPROTO;
+        return NULL;
+    }
+
     return mcu;
 }
 
@@ -110,6 +127,35 @@ void mcuco_close(mcuco_t *mcu)
 
     close_port(mcu->fd);
     free(mcu);
+}
+
+mcu_status_t mcuco_probe(mcuco_t *mcu)
+{
+    static const uint8_t expected_magic[PROBE_MAGIC_LEN] = {'M', 'C', 'U', 'O'};
+
+    if (mcu == NULL)
+    {
+        return STATUS_ERR_ARG;
+    }
+
+    uint8_t frame[PROTOCOL_MAX_COMMAND_FRAME];
+    ssize_t frame_len = protocol_probe(frame, sizeof(frame));
+
+    protocol_response_t response = {0};
+
+    mcu_status_t status = exchange(mcu, frame, frame_len, &response);
+    if (status != STATUS_OK)
+    {
+        return status;
+    }
+
+    if (response.data_len != PROBE_MAGIC_LEN ||
+        memcmp(response.data, expected_magic, PROBE_MAGIC_LEN) != 0)
+    {
+        return STATUS_ERR_BAD_FRAME;
+    }
+
+    return STATUS_OK;
 }
 
 mcu_status_t mcuco_gpio_cfg(mcuco_t *mcu, dir_t dir, port_t port, uint8_t pin)
@@ -136,6 +182,34 @@ mcu_status_t mcuco_gpio_set(mcuco_t *mcu, level_t level, port_t port, uint8_t pi
     ssize_t frame_len = protocol_gpio_set(level, port, pin, frame, sizeof(frame));
 
     return exchange(mcu, frame, frame_len, NULL);
+}
+
+mcu_status_t mcuco_gpio_toggle(mcuco_t *mcu, port_t port, uint8_t pin, level_t *level)
+{
+    if (mcu == NULL || level == NULL)
+    {
+        return STATUS_ERR_ARG;
+    }
+
+    uint8_t frame[PROTOCOL_MAX_COMMAND_FRAME];
+    ssize_t frame_len = protocol_gpio_toggle(port, pin, frame, sizeof(frame));
+
+    protocol_response_t response = {0};
+
+    mcu_status_t status = exchange(mcu, frame, frame_len, &response);
+    if (status != STATUS_OK)
+    {
+        return status;
+    }
+
+    if (response.data_len != 1)
+    {
+        return STATUS_ERR_BAD_FRAME;
+    }
+
+    *level = (response.data[0] != 0) ? LEVEL_HIGH : LEVEL_LOW;
+
+    return STATUS_OK;
 }
 
 mcu_status_t mcuco_gpio_get(mcuco_t *mcu, port_t port, uint8_t pin, level_t *level)

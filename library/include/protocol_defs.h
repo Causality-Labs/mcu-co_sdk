@@ -39,16 +39,25 @@
 #define RESPONSE_ACK_IDX  2U
 #define RESPONSE_DATA_IDX 3U
 
-/* Fixed on the wire - never renumber. Thirteen opcodes cover fourteen CLI
- * commands: `gpio irq cfg off` is GPIO_IRQ_CFG with an edge of 0. */
+/* PROBE's ACK carries a fixed 4-byte ASCII magic, "MCUO" - raw bytes, not a
+ * numeric field, so it is compared rather than decoded. */
+#define PROBE_MAGIC_LEN 4U
+
+/* Fixed on the wire - never renumber. Fifteen opcodes cover sixteen CLI
+ * commands: `gpio irq cfg off` is GPIO_IRQ_CFG with an edge of 0. PROBE has no
+ * controller behind it, which is why it sits in its own range. */
+
 typedef enum
 {
+    OPCODE_PROBE = 0x10,
+
     OPCODE_GPIO_CFG        = 0x30,
     OPCODE_GPIO_WRITE      = 0x31,
     OPCODE_GPIO_READ       = 0x32,
     OPCODE_GPIO_IRQ_BIND   = 0x33,
     OPCODE_GPIO_IRQ_CFG    = 0x34,
     OPCODE_GPIO_IRQ_UNBIND = 0x35,
+    OPCODE_GPIO_TOGGLE     = 0x36,
 
     OPCODE_PWM_GROUP_CFG     = 0x40,
     OPCODE_PWM_CFG           = 0x41,

@@ -12,6 +12,27 @@ extern "C" {
 static const uint8_t GPIO_CFG_FRAME[] = {0xA5, 0x30, 0x03, 0x01, 0x00, 0x05, 0xAB, 0xE1};
 static const uint8_t ACK_FRAME[]      = {0xA5, 0x01, 0x01, 0x1F, 0x3E};
 static const uint8_t NACK_BUSY[]      = {0xA5, 0x02, 0x00, 0x06, 0x3A, 0xC2};
+static const uint8_t PROBE_REPLY[]    = {0xA5, 0x05, 0x01, 0x4D, 0x43, 0x55, 0x4F, 0xC6, 0xBC};
+
+/* uart_open() flushes the input buffer, so a reply queued before the open is
+ * discarded. Answer from a child that waits for the command to actually
+ * arrive - no timing assumption. */
+static void answer_probe(int master)
+{
+    if (fork() != 0)
+    {
+        return;
+    }
+
+    uint8_t command[5] = {0};
+    ssize_t got = read(master, command, sizeof(command));
+    (void)got;
+
+    ssize_t written = write(master, PROBE_REPLY, sizeof(PROBE_REPLY));
+    (void)written;
+
+    _exit(0);
+}
 
 TEST_GROUP(Mcuco)
 {
@@ -25,6 +46,8 @@ TEST_GROUP(Mcuco)
 
         CHECK(openpty(&master, &slave, name, NULL, NULL) == 0);
         close(slave);
+
+        answer_probe(master);
 
         mcu = mcuco_open(name, 500);
         CHECK(mcu != NULL);
@@ -274,4 +297,85 @@ TEST(Mcuco, GpioIrqBindPutsTheDocumentedFrameOnTheWire)
 
     LONGS_EQUAL(sizeof(expected), read(master, sent, sizeof(expected)));
     MEMCMP_EQUAL(expected, sent, sizeof(expected));
+}
+
+/* --- mcuco_probe --- */
+
+// Section 0's response: LEN of 5 carrying the ASCII magic "MCUO".
+TEST(Mcuco, ProbeAcceptsTheMagicFromTheProtocolDoc)
+{
+    const uint8_t probe_reply[] = {0xA5, 0x05, 0x01, 0x4D, 0x43, 0x55, 0x4F, 0xC6, 0xBC};
+    const uint8_t probe_frame[] = {0xA5, 0x10, 0x00, 0x7C, 0x1E};
+    uint8_t sent[sizeof(probe_frame)] = {0};
+
+    reply_with(probe_reply, sizeof(probe_reply));
+
+    LONGS_EQUAL(STATUS_OK, mcuco_probe(mcu));
+
+    LONGS_EQUAL(sizeof(probe_frame), read(master, sent, sizeof(probe_frame)));
+    MEMCMP_EQUAL(probe_frame, sent, sizeof(probe_frame));
+}
+
+// A well-formed reply from some other device is exactly what probe exists to
+// catch, so a wrong magic must not read as success.
+TEST(Mcuco, ProbeRejectsAValidFrameCarryingTheWrongMagic)
+{
+    /* "MCUP" instead of "MCUO". The CRC is valid for these bytes, so the frame
+     * is rejected on the magic rather than on the checksum. */
+    const uint8_t wrong_magic[] = {0xA5, 0x05, 0x01, 0x4D, 0x43, 0x55, 0x50, 0x18, 0x5F};
+
+    reply_with(wrong_magic, sizeof(wrong_magic));
+
+    LONGS_EQUAL(STATUS_ERR_BAD_FRAME, mcuco_probe(mcu));
+}
+
+/* --- mcuco_gpio_toggle --- */
+
+TEST(Mcuco, GpioToggleReportsTheLevelItEndedAt)
+{
+    const uint8_t toggled_high[] = {0xA5, 0x02, 0x01, 0x01, 0xEC, 0x81};
+    const uint8_t toggle_frame[] = {0xA5, 0x36, 0x02, 0x00, 0x05, 0x75, 0xB1};
+    uint8_t sent[sizeof(toggle_frame)] = {0};
+    level_t level = LEVEL_LOW;
+
+    reply_with(toggled_high, sizeof(toggled_high));
+
+    LONGS_EQUAL(STATUS_OK, mcuco_gpio_toggle(mcu, PORT_A, 5, &level));
+    LONGS_EQUAL(LEVEL_HIGH, level);
+
+    LONGS_EQUAL(sizeof(toggle_frame), read(master, sent, sizeof(toggle_frame)));
+    MEMCMP_EQUAL(toggle_frame, sent, sizeof(toggle_frame));
+}
+
+// Toggling a pin that is not an output is the MCU's call, same as gpio set.
+TEST(Mcuco, GpioToggleReturnsInvalidStateWhenThePinIsNotAnOutput)
+{
+    const uint8_t nack_invalid_state[] = {0xA5, 0x02, 0x00, 0x04, 0x78, 0xE2};
+    level_t level = LEVEL_LOW;
+
+    reply_with(nack_invalid_state, sizeof(nack_invalid_state));
+
+    LONGS_EQUAL(STATUS_ERR_INVALID_STATE, mcuco_gpio_toggle(mcu, PORT_A, 5, &level));
+}
+
+/* --- mcuco_open probing --- */
+
+// A port nothing answers on is not an mcu-co port, so the handle is refused
+// rather than handed back for the first real command to fail on.
+TEST(Mcuco, OpenFailsWhenNothingAnswersTheProbe)
+{
+    char name[128];
+    int  probe_master;
+    int  slave;
+
+    CHECK(openpty(&probe_master, &slave, name, NULL, NULL) == 0);
+    close(slave);
+
+    errno = 0;
+    mcuco_t *unanswered = mcuco_open(name, 150);
+
+    POINTERS_EQUAL(NULL, unanswered);
+    LONGS_EQUAL(ETIMEDOUT, errno);
+
+    close(probe_master);
 }

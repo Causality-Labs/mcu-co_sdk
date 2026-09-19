@@ -75,11 +75,20 @@ mcuco_t *mcuco_open(const char *device_path, int timeout_ms);
 /* Closes the port and frees the handle. A NULL mcu is ignored. */
 void mcuco_close(mcuco_t *mcu);
 
+/* Confirms mcu-co is on the other end of the port, rather than some other
+ * device that happened to answer. Fails with STATUS_ERR_BAD_FRAME if the reply
+ * is well formed but carries the wrong magic. */
+mcu_status_t mcuco_probe(mcuco_t *mcu);
+
 /* Sets a pin's direction. */
 mcu_status_t mcuco_gpio_cfg(mcuco_t *mcu, dir_t dir, port_t port, uint8_t pin);
 
 /* Drives an output pin. */
 mcu_status_t mcuco_gpio_set(mcuco_t *mcu, level_t level, port_t port, uint8_t pin);
+
+/* Flips an output pin and reports the level it ended up at, saving the round
+ * trip a set-then-get would cost. `level` is untouched unless STATUS_OK. */
+mcu_status_t mcuco_gpio_toggle(mcuco_t *mcu, port_t port, uint8_t pin, level_t *level);
 
 /* Reads an input pin. `level` is untouched unless STATUS_OK is returned. */
 mcu_status_t mcuco_gpio_get(mcuco_t *mcu, port_t port, uint8_t pin, level_t *level);
