@@ -165,3 +165,23 @@ TEST(Uart, WriteReportsErrnoForAClosedDescriptor)
 
     LONGS_EQUAL(-EBADF, uart_write(closed, GPIO_SET_FRAME, sizeof(GPIO_SET_FRAME)));
 }
+
+// Responses carry no opcode, so a second handle reading the first one's replies
+// would be undetectable. The port is claimed exclusively instead.
+TEST(Uart, OpenRefusesASecondHandleOnTheSameDevice)
+{
+    char name[128];
+    int  probe_master;
+    int  slave;
+
+    CHECK(openpty(&probe_master, &slave, name, NULL, NULL) == 0);
+    close(slave);
+
+    int first = uart_open(name);
+    CHECK(first >= 0);
+
+    LONGS_EQUAL(-EBUSY, uart_open(name));
+
+    uart_close(first);
+    close(probe_master);
+}

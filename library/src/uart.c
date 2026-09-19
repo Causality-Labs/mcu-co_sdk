@@ -5,6 +5,7 @@
 
 #include <errno.h>
 #include <fcntl.h>
+#include <sys/ioctl.h>
 #include <poll.h>
 #include <termios.h>
 #include <time.h>
@@ -67,6 +68,14 @@ static int configure_port(int fd)
     if (cfgetospeed(&actual) != MCU_BAUD)
     {
         return -EINVAL;
+    }
+
+    /* Claim the port: a second open of the same device then fails with EBUSY
+     * rather than handing out a descriptor that reads the first one's replies.
+     * Responses carry no opcode, so that theft would be undetectable. */
+    if (ioctl(fd, TIOCEXCL) != 0)
+    {
+        return -errno;
     }
 
     tcflush(fd, TCIFLUSH);
