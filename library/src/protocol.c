@@ -58,6 +58,11 @@ ssize_t protocol_probe(uint8_t *buffer, size_t buffer_len)
     return build_frame(OPCODE_PROBE, NULL, 0, buffer, buffer_len);
 }
 
+ssize_t protocol_reset(uint8_t *buffer, size_t buffer_len)
+{
+    return build_frame(OPCODE_RESET, NULL, 0, buffer, buffer_len);
+}
+
 ssize_t protocol_gpio_cfg(dir_t dir, port_t port, uint8_t pin, uint8_t *buffer, size_t buffer_len)
 {
     if (dir != DIR_INPUT && dir != DIR_OUTPUT)

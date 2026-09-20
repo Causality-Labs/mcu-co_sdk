@@ -158,6 +158,19 @@ mcu_status_t mcuco_probe(mcuco_t *mcu)
     return STATUS_OK;
 }
 
+mcu_status_t mcuco_reset(mcuco_t *mcu)
+{
+    if (mcu == NULL)
+    {
+        return STATUS_ERR_ARG;
+    }
+
+    uint8_t frame[PROTOCOL_MAX_COMMAND_FRAME];
+    ssize_t frame_len = protocol_reset(frame, sizeof(frame));
+
+    return exchange(mcu, frame, frame_len, NULL);
+}
+
 mcu_status_t mcuco_gpio_cfg(mcuco_t *mcu, dir_t dir, port_t port, uint8_t pin)
 {
     if (mcu == NULL)

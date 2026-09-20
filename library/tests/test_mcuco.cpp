@@ -1,5 +1,6 @@
 #include "CppUTest/TestHarness.h"
 
+#include <errno.h>
 #include <fcntl.h>
 #include <pty.h>
 #include <unistd.h>
@@ -24,9 +25,31 @@ static void answer_probe(int master)
         return;
     }
 
+    /* Two things to survive here. Until the parent opens the slave, reading
+     * the master gives EIO - the child is usually forked before that happens.
+     * And read() can return short: leaving even one byte of the probe command
+     * behind makes the next test read it instead of its own reply. */
     uint8_t command[5] = {0};
-    ssize_t got = read(master, command, sizeof(command));
-    (void)got;
+    size_t  consumed   = 0;
+
+    while (consumed < sizeof(command))
+    {
+        ssize_t got = read(master, &command[consumed], sizeof(command) - consumed);
+
+        if (got > 0)
+        {
+            consumed += (size_t)got;
+            continue;
+        }
+
+        if (got < 0 && (errno == EIO || errno == EAGAIN || errno == EINTR))
+        {
+            usleep(1000);
+            continue;
+        }
+
+        _exit(1);
+    }
 
     ssize_t written = write(master, PROBE_REPLY, sizeof(PROBE_REPLY));
     (void)written;
@@ -378,4 +401,36 @@ TEST(Mcuco, OpenFailsWhenNothingAnswersTheProbe)
     LONGS_EQUAL(ETIMEDOUT, errno);
 
     close(probe_master);
+}
+
+/* --- mcuco_reset --- */
+
+// The MCU ACKs before rebooting, so a bare ACK is the whole success case.
+TEST(Mcuco, ResetPutsTheDocumentedFrameOnTheWire)
+{
+    const uint8_t reset_frame[] = {0xA5, 0x11, 0x00, 0x4D, 0x2D};
+    uint8_t sent[sizeof(reset_frame)] = {0};
+
+    reply_with(ACK_FRAME, sizeof(ACK_FRAME));
+
+    LONGS_EQUAL(STATUS_OK, mcuco_reset(mcu));
+
+    LONGS_EQUAL(sizeof(reset_frame), read(master, sent, sizeof(reset_frame)));
+    MEMCMP_EQUAL(reset_frame, sent, sizeof(reset_frame));
+}
+
+// A non-empty payload is the only way reset fails on the MCU, and the library
+// never sends one - so a refusal still has to surface rather than be swallowed.
+TEST(Mcuco, ResetSurfacesANackFromTheMcu)
+{
+    const uint8_t nack_invalid_arg[] = {0xA5, 0x02, 0x00, 0x02, 0xBE, 0x82};
+
+    reply_with(nack_invalid_arg, sizeof(nack_invalid_arg));
+
+    LONGS_EQUAL(STATUS_ERR_INVALID_ARG, mcuco_reset(mcu));
+}
+
+TEST(Mcuco, ResetRejectsANullHandle)
+{
+    LONGS_EQUAL(STATUS_ERR_ARG, mcuco_reset(NULL));
 }

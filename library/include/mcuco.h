@@ -112,6 +112,12 @@ void mcuco_close(mcuco_t *mcu);
  * is well formed but carries the wrong magic. */
 mcu_status_t mcuco_probe(mcuco_t *mcu);
 
+/* Reboots the MCU. The ACK is fully transmitted before the reset fires, so a
+ * STATUS_OK means the request landed - but the link then goes down and no
+ * further command on this handle will work. Close it and, once the MCU has
+ * booted, open a fresh one. */
+mcu_status_t mcuco_reset(mcuco_t *mcu);
+
 /* Sets a pin's direction. */
 mcu_status_t mcuco_gpio_cfg(mcuco_t *mcu, dir_t dir, port_t port, uint8_t pin);
 

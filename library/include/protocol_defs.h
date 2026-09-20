@@ -50,6 +50,7 @@
 typedef enum
 {
     OPCODE_PROBE = 0x10,
+    OPCODE_RESET = 0x11,
 
     OPCODE_GPIO_CFG        = 0x30,
     OPCODE_GPIO_WRITE      = 0x31,
