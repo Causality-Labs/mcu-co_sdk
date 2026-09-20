@@ -9,10 +9,6 @@
 #include "mcuco.h"
 #include "protocol.h"
 
-/* USB-serial adapters drop bytes written immediately after open, which would
- * make the probe below fail on a board that is present and working. */
-#define SETTLE_NS 100000000L
-
 struct mcuco
 {
     int fd;
@@ -102,9 +98,6 @@ mcuco_t *mcuco_open(const char *device_path, int timeout_ms)
 
     mcu->fd         = fd;
     mcu->timeout_ms = timeout_ms;
-
-    // struct timespec settle = {.tv_sec = 0, .tv_nsec = SETTLE_NS};
-    // nanosleep(&settle, NULL);
 
     /* Confirm mcu-co is actually on the other end rather than handing back a
      * handle to whatever device happened to own this path. */
