@@ -107,15 +107,12 @@ mcuco_t *mcuco_open(const char *device_path, int timeout_ms);
 /* Closes the port and frees the handle. A NULL mcu is ignored. */
 void mcuco_close(mcuco_t *mcu);
 
-/* Confirms mcu-co is on the other end of the port, rather than some other
- * device that happened to answer. Fails with STATUS_ERR_BAD_FRAME if the reply
- * is well formed but carries the wrong magic. */
+/* Confirms mcu-co, not just any device, is on the other end. Wrong magic in
+ * an otherwise valid reply fails with STATUS_ERR_BAD_FRAME. */
 mcu_status_t mcuco_probe(mcuco_t *mcu);
 
-/* Reboots the MCU. The ACK is fully transmitted before the reset fires, so a
- * STATUS_OK means the request landed - but the link then goes down and no
- * further command on this handle will work. Close it and, once the MCU has
- * booted, open a fresh one. */
+/* Reboots the MCU. STATUS_OK only means the request landed; the link then
+ * goes down. Close this handle and open a fresh one once it has booted. */
 mcu_status_t mcuco_reset(mcuco_t *mcu);
 
 /* Sets a pin's direction. */
