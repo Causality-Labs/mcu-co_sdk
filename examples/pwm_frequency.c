@@ -94,12 +94,14 @@ int main(int argc, char **argv)
         report_group(mcu, GROUP_7777, 7777);
     }
 
-    /* Hand the pins back to a known state before dropping the link - the
-     * timers keep running until the MCU is reset or repowered. Waiting on the
-     * firmware command:
-     *
-     * mcuco_reset(mcu);
-     */
+    /* The timers keep running until the MCU is reset, so leave it idle rather
+     * than driving three groups nobody is listening to. Nothing works on this
+     * handle afterwards, so closing is all that is left. */
+    mcu_status_t reset_status = mcuco_reset(mcu);
+    if (reset_status != STATUS_OK)
+    {
+        fprintf(stderr, "reset: %s\n", mcuco_strerror(reset_status));
+    }
 
     mcuco_close(mcu);
 

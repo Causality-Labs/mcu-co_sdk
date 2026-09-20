@@ -78,11 +78,13 @@ int main(int argc, char **argv)
     }
 
     /* Hand the pins back to a known state before dropping the link - the MCU
-     * keeps driving whatever it was told to until it is reset or repowered.
-     * Waiting on the firmware command:
-     *
-     * mcuco_reset(mcu);
-     */
+     * keeps driving whatever it was told to until it is reset. Nothing works
+     * on this handle afterwards, so closing is all that is left. */
+    mcu_status_t reset_status = mcuco_reset(mcu);
+    if (reset_status != STATUS_OK)
+    {
+        fprintf(stderr, "reset: %s\n", mcuco_strerror(reset_status));
+    }
 
     mcuco_close(mcu);
 

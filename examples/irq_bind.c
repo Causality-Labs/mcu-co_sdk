@@ -91,14 +91,7 @@ int main(int argc, char **argv)
         pause();
     }
 
-    /* Note the tension here: a reset would put the pins back in a known state,
-     * but it would also tear down the binding - which is the one thing this
-     * example exists to leave running after the host exits. Uncomment only if
-     * you want the MCU idle on exit.
-     *
-     * mcuco_reset(mcu);
-     */
-
+    mcuco_reset(mcu);
     mcuco_close(mcu);
 
     return 0;
