@@ -11,3 +11,6 @@ target_link_libraries(pwm_frequency PRIVATE mcuco)
 
 add_executable(irq_bind irq_bind.c)
 target_link_libraries(irq_bind PRIVATE mcuco)
+
+add_executable(pwm_breathe pwm_breathe.c)
+target_link_libraries(pwm_breathe PRIVATE mcuco)
