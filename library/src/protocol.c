@@ -19,7 +19,6 @@ static bool is_valid_group(uint8_t group)
     return group <= GROUP_MAX;
 }
 
-
 /* SOF · OPCODE · LEN · PAYLOAD · CRC_L · CRC_H, with the CRC over everything
  * but SOF and the CRC bytes themselves, little-endian on the wire. */
 static ssize_t build_frame(protocol_opcode_t opcode, const uint8_t *payload, size_t payload_len, uint8_t *buffer,
@@ -57,6 +56,11 @@ static ssize_t build_frame(protocol_opcode_t opcode, const uint8_t *payload, siz
 ssize_t protocol_probe(uint8_t *buffer, size_t buffer_len)
 {
     return build_frame(OPCODE_PROBE, NULL, 0, buffer, buffer_len);
+}
+
+ssize_t protocol_reset(uint8_t *buffer, size_t buffer_len)
+{
+    return build_frame(OPCODE_RESET, NULL, 0, buffer, buffer_len);
 }
 
 ssize_t protocol_gpio_cfg(dir_t dir, port_t port, uint8_t pin, uint8_t *buffer, size_t buffer_len)

@@ -49,8 +49,7 @@ int get_u32_le(const uint8_t *source, uint32_t *value)
         return -1;
     }
 
-    *value = (uint32_t)source[0] | ((uint32_t)source[1] << 8) | ((uint32_t)source[2] << 16) |
-             ((uint32_t)source[3] << 24);
+    *value = (uint32_t)source[0] | ((uint32_t)source[1] << 8) | ((uint32_t)source[2] << 16) | ((uint32_t)source[3] << 24);
 
     return 4;
 }

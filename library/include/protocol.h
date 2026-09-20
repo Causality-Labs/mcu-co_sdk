@@ -8,7 +8,6 @@
 
 #include "mcuco.h"
 #include "protocol_defs.h"
-#include "status.h"
 
 /* `ack` disambiguates `data`: on ACK it is a read's value, on NACK a reason
  * byte. Kept raw because LEN, not the opcode, sizes the frame - so decoding
@@ -27,6 +26,8 @@ typedef struct
  * `buffer` must hold at least PROTOCOL_MAX_COMMAND_FRAME bytes. Returns the
  * number of bytes written, or a negative mcu_status_t. */
 ssize_t protocol_probe(uint8_t *buffer, size_t buffer_len);
+
+ssize_t protocol_reset(uint8_t *buffer, size_t buffer_len);
 
 ssize_t protocol_gpio_cfg(dir_t dir, port_t port, uint8_t pin, uint8_t *buffer, size_t buffer_len);
 

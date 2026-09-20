@@ -3,7 +3,37 @@
 
 #include <stdint.h>
 
-#include "status.h"
+/* Codes 1-10 are the firmware's status_t, sent verbatim as a NACK's reason
+ * byte: fixed on the wire, append-only. Host-side codes start at 0x80 so they
+ * can never collide with one. */
+typedef enum
+{
+    STATUS_OK = 0,
+
+    STATUS_ERR               = 1,
+    STATUS_ERR_INVALID_ARG   = 2,
+    STATUS_ERR_INVALID_PIN   = 3,
+    STATUS_ERR_INVALID_STATE = 4,
+    STATUS_ERR_NOT_INIT      = 5,
+    STATUS_ERR_BUSY          = 6,
+    STATUS_ERR_TIMEOUT       = 7,
+    STATUS_ERR_UNSUPPORTED   = 8,
+    STATUS_ERR_EMPTY         = 9,
+    STATUS_ERR_FULL          = 10,
+
+    /* Distinct from STATUS_ERR_INVALID_ARG so a local range check is
+     * distinguishable from the MCU's own refusal. */
+    STATUS_ERR_ARG = 0x80,
+
+    STATUS_ERR_IO = 0x81,
+
+    /* The MCU answers a bad frame with silence, so this cannot be told apart
+     * from an absent MCU. */
+    STATUS_ERR_NO_RESPONSE = 0x82,
+
+    STATUS_ERR_BAD_FRAME = 0x83,
+    STATUS_ERR_NOT_OPEN  = 0x84,
+} mcu_status_t;
 
 /* One call per command in mcu-co_Protocol.md. Arguments are value-first -
  * mcuco_gpio_set(mcu, level, port, pin) - matching CLI token order and payload
@@ -64,10 +94,12 @@ typedef enum
 #define FREQ_MIN  1U       /* Hz. 0 is not shorthand for teardown */
 #define FREQ_MAX  1000000U /* Hz */
 
-#define TIMEOUT_DEFAULT_MS 1000
+#define MCUCO_TIMEOUT_DEFAULT_MS 1000
 
 /* Not thread-safe: the protocol allows one command in flight. */
 typedef struct mcuco mcuco_t;
+
+const char *mcuco_strerror(mcu_status_t status);
 
 /* Returns NULL on failure with errno set, as fopen does. */
 mcuco_t *mcuco_open(const char *device_path, int timeout_ms);
@@ -79,6 +111,12 @@ void mcuco_close(mcuco_t *mcu);
  * device that happened to answer. Fails with STATUS_ERR_BAD_FRAME if the reply
  * is well formed but carries the wrong magic. */
 mcu_status_t mcuco_probe(mcuco_t *mcu);
+
+/* Reboots the MCU. The ACK is fully transmitted before the reset fires, so a
+ * STATUS_OK means the request landed - but the link then goes down and no
+ * further command on this handle will work. Close it and, once the MCU has
+ * booted, open a fresh one. */
+mcu_status_t mcuco_reset(mcuco_t *mcu);
 
 /* Sets a pin's direction. */
 mcu_status_t mcuco_gpio_cfg(mcuco_t *mcu, dir_t dir, port_t port, uint8_t pin);

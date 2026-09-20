@@ -2,7 +2,7 @@
 #define COMMAND_TRANSPORT_H
 
 #include "protocol.h"
-#include "status.h"
+#include "mcuco.h"
 
 /* Opens the command port. Returns the fd, or a negative errno with nothing
  * left open. */

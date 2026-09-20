@@ -479,3 +479,15 @@ TEST(Protocol, GpioToggleRejectsAPinAboveTheMaximum)
     LONGS_EQUAL(-STATUS_ERR_ARG,
                 protocol_gpio_toggle(PORT_A, PIN_MAX + 1, frame, sizeof(frame)));
 }
+
+/* --- protocol_reset --- */
+
+// Section 0.5 of mcu-co_Protocol.md: "reset". No payload, like probe.
+TEST(Protocol, ResetMatchesTheWorkedFrameInTheProtocolDoc)
+{
+    const uint8_t expected[] = {0xA5, 0x11, 0x00, 0x4D, 0x2D};
+    uint8_t frame[PROTOCOL_MAX_COMMAND_FRAME] = {0};
+
+    LONGS_EQUAL(sizeof(expected), protocol_reset(frame, sizeof(frame)));
+    MEMCMP_EQUAL(expected, frame, sizeof(expected));
+}
