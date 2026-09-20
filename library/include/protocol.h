@@ -8,7 +8,6 @@
 
 #include "mcuco.h"
 #include "protocol_defs.h"
-#include "status.h"
 
 /* `ack` disambiguates `data`: on ACK it is a read's value, on NACK a reason
  * byte. Kept raw because LEN, not the opcode, sizes the frame - so decoding

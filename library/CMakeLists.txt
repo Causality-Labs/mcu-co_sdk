@@ -9,6 +9,7 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 add_library(mcuco SHARED
   src/uart.c
+  src/status.c
   src/crc16.c
   src/endianess.c
   src/protocol.c

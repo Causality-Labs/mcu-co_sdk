@@ -103,8 +103,8 @@ mcuco_t *mcuco_open(const char *device_path, int timeout_ms)
     mcu->fd         = fd;
     mcu->timeout_ms = timeout_ms;
 
-    struct timespec settle = {.tv_sec = 0, .tv_nsec = SETTLE_NS};
-    nanosleep(&settle, NULL);
+    // struct timespec settle = {.tv_sec = 0, .tv_nsec = SETTLE_NS};
+    // nanosleep(&settle, NULL);
 
     /* Confirm mcu-co is actually on the other end rather than handing back a
      * handle to whatever device happened to own this path. */
@@ -139,8 +139,8 @@ mcu_status_t mcuco_probe(mcuco_t *mcu)
         return STATUS_ERR_ARG;
     }
 
-    uint8_t frame[PROTOCOL_MAX_COMMAND_FRAME];
-    ssize_t frame_len = protocol_probe(frame, sizeof(frame));
+    uint8_t frame[PROTOCOL_MAX_COMMAND_FRAME] = {0};
+    ssize_t frame_len                         = protocol_probe(frame, sizeof(frame));
 
     protocol_response_t response = {0};
 
@@ -150,8 +150,7 @@ mcu_status_t mcuco_probe(mcuco_t *mcu)
         return status;
     }
 
-    if (response.data_len != PROBE_MAGIC_LEN ||
-        memcmp(response.data, expected_magic, PROBE_MAGIC_LEN) != 0)
+    if (response.data_len != PROBE_MAGIC_LEN || memcmp(response.data, expected_magic, PROBE_MAGIC_LEN) != 0)
     {
         return STATUS_ERR_BAD_FRAME;
     }
