@@ -4,28 +4,39 @@ The planned surface for `mcu-co-cli`, the CLI built on `libmcuco.so`. This is th
 grammar and its rules; `mcu-co_Protocol.md` in the firmware repo remains
 authoritative for the wire format and is not restated here.
 
-Status: shape agreed, nothing implemented. Two picks are still open, marked
-**OPEN** below.
+Status: shape agreed, nothing implemented.
 
 ## Shape
 
 ```
-mcu-co-cli -s <subsystem> -c <command> [ flags ]
+mcu-co-cli <subsystem> <verb> [ flags ]
 ```
 
-Nothing is positional. Every argument is a flag, so parsing is a single
-`getopt_long` pass, fully order-independent — `-s gpio -c set` and `-c set -s gpio`
-are the same command — and the parser expects zero non-option arguments, which
-turns a dropped flag into an error instead of a silently ignored token.
+Two positional tokens and nothing else: the subsystem names the hardware, the
+verb names the action. "Group" is deliberately not used for this token — the wire
+already calls a timer a `GROUP`, and one word for two things would be worse than
+a longer one. Every *argument* is a flag. All sixteen commands are exactly two
+tokens, so the parser requires exactly two non-options — a third is a typo rather
+than something to ignore, and a missing one is a dropped word rather than a
+silently incomplete command.
+
+glibc permutes non-options to the end of argv, so a single `getopt_long` pass
+still handles the whole line and the flags stay order-independent: `gpio set -p A5`
+and `-p A5 gpio set` are the same command. After the loop, `optind..argc-1` holds
+the two tokens in order.
+
+The subsystem and the verb each have exactly one slot, so neither can be repeated
+or doubled up. The exclusivity that a `-s`/`-c` pair would have needed a rule for
+is structural here.
 
 ### Universal rules
 
-- Argument flags always take a value, spelled in full. `-s gpio`, never `-s g`.
+- Argument flags always take a value, spelled in full. `-e rising`, never `-e r`.
 - An unknown value errors, listing the valid set.
-- A repeated flag is an error, not getopt's silent last-wins. `-s gpio -s pwm` is
-  a typo or a bad shell expansion, never an intentional override.
-- A flag not valid for the `(subsystem, command)` pair is rejected by name:
-  `-s gpio -c get -l high` → *"gpio get takes no --level"*.
+- A repeated flag is an error, not getopt's silent last-wins. `-p A5 -p A6` is a
+  typo or a bad shell expansion, never an intentional override.
+- A flag not valid for the `(subsystem, verb)` pair is rejected by name:
+  `gpio get -l high` → *"gpio get takes no --level"*.
 - `-q`, `-h` and `-V` are the only booleans. They are true on/off switches with
   nothing to be exclusive against; everywhere else a value-taking flag is what
   makes "exactly one of" structural rather than a runtime check.
@@ -35,50 +46,55 @@ turns a dropped flag into an error instead of a silently ignored token.
 One row per command in the protocol reference.
 
 ```
-link   -c probe
-       -c reset
+mcu    probe
+       reset
 
-gpio   -c cfg     -p <pin> -d <input|output>
-       -c set     -p <pin> -l <low|high>
-       -c get     -p <pin>                       → low | high
-       -c toggle  -p <pin>                       → low | high   (after the flip)
+gpio   cfg     -p <pin> -d <input|output>
+       set     -p <pin> -l <low|high>
+       get     -p <pin>                       → low | high
+       toggle  -p <pin>                       → low | high   (after the flip)
 
-irq    -c cfg     -p <pin> -e <off|rising|falling|both>
-       -c bind    -p <pin> -e <rising|falling|both> -a <low|high|toggle> --to <pin>
-       -c unbind  -p <pin>
+irq    cfg     -p <pin> -e <off|rising|falling|both>
+       bind    -p <pin> -e <rising|falling|both> -a <low|high|toggle> --to <pin>
+       unbind  -p <pin>
 
-timer  -c cfg     -t <0-2> -f <1-1000000>
-       -c get     -t <0-2>                       → achieved Hz
-       -c release -t <0-2>
+timer  cfg     -T <0-2> -f <1-1000000>
+       get     -T <0-2>                       → achieved Hz
+       release -T <0-2>
 
-pwm    -c cfg     -p <pin> [--polarity <active-high|active-low>]
-       -c set     -p <pin> -u <duty>
-       -c get     -p <pin>                       → duty
-       -c release -p <pin>
+pwm    cfg     -p <pin> [--polarity <active-high|active-low>]
+       set     -p <pin> -u <duty>
+       get     -p <pin>                       → duty
+       release -p <pin>
 ```
 
-A `(subsystem, command)` pair outside this table is rejected, naming the commands
-that subsystem does take.
+`mcu` is a subsystem like any other rather than `mcu-co-cli probe` standing
+alone, so that every command is `<subsystem> <verb>` and the parser's arity check
+is exact. It is named for the chip rather than the connection because that is
+what its verbs address: `probe` tests the link, but `reset` reboots the MCU.
+
+A `(subsystem, verb)` pair outside this table is rejected, naming the verbs that
+subsystem does take.
 
 ## Flags
 
 | flag | long | values | notes |
 |---|---|---|---|
-| `-s` | `--subsystem` | `gpio` `irq` `timer` `pwm` `link` | |
-| `-c` | `--command` | depends on `-s` | |
 | `-p` | `--pin` | `A5` — port A–G, pin 0–15 | optional leading `P`, case-insensitive |
 | `-d` | `--direction` | `input` `output` | |
 | `-l` | `--level` | `low` `high` | |
 | `-e` | `--edge` | `off` `rising` `falling` `both` | `off` refused by `bind` |
 | `-a` | `--action` | `low` `high` `toggle` | |
-| `-t` | `--timer` | `0` `1` `2` | **OPEN**: `-t` vs `-n/--number` |
+| `-T` | `--timer` | `0` `1` `2` | `-t` is timeout — see Globals |
 | `-f` | `--freq` | `1`–`1000000` Hz | plain integer |
-| `-u` | `--duty` | `0`–`100`, one decimal | **OPEN**: percent vs raw tenths |
+| `-u` | `--duty` | `0`–`100`, one decimal | wire is tenths; exact bijection |
 | | `--to` | second pin | `irq bind` only |
 | | `--polarity` | `active-high` (default), `active-low` | `pwm cfg` only |
 
 Long-only where a flag is typed rarely: `--to`, `--polarity`, and the globals.
-`-v` is left free for a future `--verbose`.
+`-v` is left free for a future `--verbose`. `-s` and `-c` are free too, now that
+the subsystem and verb are positional; both are left unclaimed rather than given a
+use for the sake of it.
 
 ### `-p` accepts
 
@@ -127,18 +143,18 @@ free, and it saves a `get` round trip.
 - **`release` freezes pins, it does not silence them.** Stopping the counter
   leaves each pin at whatever level it held. Silence one output with `-u 0`.
 - Reconfiguring a live timer fails with `ERR_BUSY` and changes nothing.
-- `-f 0` is a range error. Zero is not shorthand for teardown; that is `-c release`.
+- `-f 0` is a range error. Zero is not shorthand for teardown; that is `timer release`.
 
 ### pwm
 
 - **`cfg` claims the pin silent**, at 0% until the first `set`, so there is no
   glitch at whatever duty was last there.
 - **`release` frees one pin**; the other three in that timer keep running.
-- **No PWM command takes `-t`.** Which timer drives a given pin comes from the
+- **No PWM command takes `-T`.** Which timer drives a given pin comes from the
   STM32G4 alternate-function table and lives only in the firmware. Frequency is
   addressed by timer, duty by pin, and the MCU resolves the rest.
 
-### link
+### mcu
 
 `-V` reports the CLI and library version only. The protocol carries no version
 field by design — host and firmware are built and flashed together — and `probe`
@@ -151,7 +167,7 @@ board, and the help text should say so.
 |---|---|
 | **Ours** | Ranges and enum membership only: port A–G, pin 0–15, timer 0–2, freq 1–1000000, duty 0–100. |
 | **The MCU's** | Reserved pins, ownership, command ordering, EXTI-line conflicts. They arrive as reason codes and are rendered with a hint. |
-| **Never ours** | The pin-to-timer map. This is why no PWM command takes `-t`, and why the `ERR_NOT_INIT` hint below says `-t <0-2>` rather than naming the timer. |
+| **Never ours** | The pin-to-timer map. This is why no `pwm` verb takes `-T`, and why the `ERR_NOT_INIT` hint below says `-T <0-2>` rather than naming the timer. |
 
 The second and third rows are rules 2 and 1 in `CLAUDE.md`. A second copy of the
 MCU's policy here is a second copy that can be wrong.
@@ -160,27 +176,45 @@ MCU's policy here is a second copy that can be wrong.
 
 ```
       --device <path>     serial port        [MCUCO_DEVICE, then /dev/ttyACM0]
-      --timeout <ms>      response deadline  [1000]
+  -t, --timeout <ms>      response deadline  [1000]
   -q, --quiet             no stdout; exit code only
   -h, --help              context-sensitive
   -V, --version
 ```
 
-`--device` and `--timeout` are long-only because `-d` is direction and `-t` is
-timer. `--device` can afford it: `MCUCO_DEVICE` carries it, so it is typed once
-per shell. Precedence is flag, then env, then `/dev/ttyACM0`. `--timeout` gets no
-env var — a per-shell default for a deadline invites silently slow behaviour — and
-`-t 2000` typed by mistake errors with *"did you mean --timeout?"*.
+`--device` is long-only because `-d` is direction. It can afford it:
+`MCUCO_DEVICE` carries it, so it is typed once per shell. Precedence is flag, then env, then `/dev/ttyACM0`. That default suits
+an ST-Link virtual COM port; an FTDI or CP210x adapter enumerates as
+`/dev/ttyUSB0` and the i.MX93's own UART is different again, which is the reason
+the env var exists rather than a longer list of defaults. `--timeout` gets no
+env var — a per-shell default for a deadline invites silently slow behaviour.
+
+`-t` is the timeout and `-T` is the timer index. The pair is safe rather than the
+usual case-pair typo trap, for a specific reason: the two are not interchangeable.
+`-T` is required by all three timer commands, while `-t` has a default. So a
+slipped `-t 0` fails at parse time with *"timer cfg requires -T/--timer"*, and a
+slipped `-T 2000` fails with *"timer 2000 out of range (0-2). Did you mean
+-t/--timeout?"*. Neither slip reaches the wire.
+
+That reasoning is the justification, not a pattern to extend. There is no rule
+here about what a capital letter means, so any future case pair has to earn its
+place the same way — by having one side required and the other defaulted, with
+both slips caught before anything is sent.
 
 `-h` is generated from the same table that drives dispatch and validation, so it
 narrows with what has already been typed and cannot drift from what is
 dispatchable:
 
 ```
-mcu-co-cli -h                  → the five subsystems
-mcu-co-cli -s pwm -h           → cfg, set, get, release
-mcu-co-cli -s pwm -c set -h    → -p, -u, and their ranges
+mcu-co-cli --help              → the five subsystems
+mcu-co-cli pwm --help          → cfg, set, get, release
+mcu-co-cli pwm set --help      → -p, -u, and their ranges
 ```
+
+`-h` cannot act the moment `getopt_long` returns it. With `pwm --help` the verb
+tokens have not necessarily been scanned yet, so it sets a flag, the loop runs to
+completion, and help is then printed scoped to whichever tokens were found. `-V`
+is handled the same way.
 
 ## Exit codes
 
@@ -219,15 +253,15 @@ is not mcu-co.
 That split is what makes both of these work with no parsing and no `-q`:
 
 ```sh
-level=$(mcu-co-cli -s gpio -c get -p C13) || exit
-[ "$level" = high ] && mcu-co-cli -s gpio -c set -p A5 -l high
+level=$(mcu-co-cli gpio get -p C13) || exit
+[ "$level" = high ] && mcu-co-cli gpio set -p A5 -l high
 ```
 
 ```sh
 # claim_group() from examples/pwm_breathe.c, as a shell script
-if ! mcu-co-cli -s timer -c cfg -t 0 -f 1000; then
-    mcu-co-cli -s timer -c release -t 0
-    mcu-co-cli -s timer -c cfg -t 0 -f 1000
+if ! mcu-co-cli timer cfg -T 0 -f 1000; then
+    mcu-co-cli timer release -T 0
+    mcu-co-cli timer cfg -T 0 -f 1000
 fi
 ```
 
@@ -239,20 +273,20 @@ step" or "the last run left state behind": `ERR_INVALID_STATE`, `ERR_NOT_INIT` a
 command is the single largest usability win available here.
 
 ```
-$ mcu-co-cli -s gpio -c set -p A5 -l high
+$ mcu-co-cli gpio set -p A5 -l high
 mcu-co-cli: ERR_INVALID_STATE: PA5 is not configured as an output
-hint: mcu-co-cli -s gpio -c cfg -p A5 -d output
+hint: mcu-co-cli gpio cfg -p A5 -d output
 
-$ mcu-co-cli -s irq -c bind -p B5 -e rising -a high --to A0
+$ mcu-co-cli irq bind -p B5 -e rising -a high --to A0
 mcu-co-cli: ERR_BUSY: EXTI line 5 is already in use
 hint: line 5 is shared by pin 5 of every port — something on P?5 holds it
 
-$ mcu-co-cli -s pwm -c cfg -p A5
+$ mcu-co-cli pwm cfg -p A5
 mcu-co-cli: ERR_NOT_INIT: PA5's timer has no frequency set
-hint: mcu-co-cli -s timer -c cfg -t <0-2> -f <hz>
+hint: mcu-co-cli timer cfg -T <0-2> -f <hz>
 ```
 
-This is a `(command, reason_code) → hint` lookup, not a pre-flight gate. The MCU
+This is a `(verb, reason_code) → hint` lookup, not a pre-flight gate. The MCU
 has already decided; we are rendering its verdict with a suggestion. If a hint is
 wrong the user still received the authoritative answer, so no policy is
 duplicated.
@@ -274,9 +308,9 @@ mismatch is deliberate and should not be "fixed" later.
 
 | CLI | wire | library |
 |---|---|---|
-| `-s irq` | `GPIO_IRQ_CFG` / `_BIND` / `_UNBIND` | `mcuco_gpio_irq_*` |
-| `-s timer`, `-t N` | `GROUP` — 0/1/2 = TIM2/TIM3/TIM4 | `mcuco_pwm_group_*` |
-| `-s pwm` | `PWM_CFG` / `_SET` / `_GET` / `_RELEASE` | `mcuco_pwm_channel_*` |
+| `irq` subsystem | `GPIO_IRQ_CFG` / `_BIND` / `_UNBIND` | `mcuco_gpio_irq_*` |
+| `timer` subsystem, `-T N` | `GROUP` — 0/1/2 = TIM2/TIM3/TIM4 | `mcuco_pwm_group_*` |
+| `pwm` subsystem | `PWM_CFG` / `_SET` / `_GET` / `_RELEASE` | `mcuco_pwm_channel_*` |
 | `-u` percent | `DUTY`, tenths of a percent | `uint16_t`, tenths |
 
 `gpio` is dropped from `irq` because every EXTI trigger is a GPIO pin — the prefix
@@ -285,33 +319,30 @@ adds no information and costs a token on every invocation. `timer`/`pwm` replace
 confuse where `group` and `channel` are easy to.
 
 `-u` in percent is an exact bijection onto the wire's tenths — 0–100.0 at one
-decimal place is the same set of values as 0–1000 — so nothing is rounded. **OPEN**:
-raw tenths is the alternative, trading `-u 25` meaning 2.5% for zero translation.
+decimal place is the same set of values as 0–1000 — so nothing is rounded. Raw
+tenths was the alternative and was rejected: `-u 25` is a legal value there,
+meaning 2.5%, wrong by a factor of ten with nothing to flag it.
 
-## Open decisions
+## MCU state between invocations
 
-1. **`-t/--timer` vs `-n/--number`** for the timer index. `-t` is mnemonic but
-   reads as "timeout" in most tools, which is why `--timeout` is long-only.
-2. **`-u/--duty` in percent vs raw tenths.** See Vocabulary above.
+**Confirmed: MCU state survives the port closing.** A one-shot CLI is therefore
+sound — `gpio cfg` in one invocation and `gpio set` in the next is a valid
+sequence, and every multi-step workflow in this document works as written.
 
-## Risk to verify on hardware
+One thing to remember if that ever stops being true. `configure_port()` in
+`library/src/uart.c` sets `CLOCAL` but never clears `HUPCL`, which is on by
+default, so the kernel drops DTR/RTS when the last fd closes. That is harmless on
+hardware that does not wire DTR to NRST. On hardware that does, every invocation
+would reboot the MCU and wipe the previous one's configuration. If a sequence that
+used to work starts failing with `ERR_INVALID_STATE` on a different board or
+cable, check this first; the fix is one line alongside the other `c_cflag`
+settings:
 
-`configure_port()` in `library/src/uart.c` sets `CLOCAL` but never clears `HUPCL`,
-which is on by default, so the kernel drops DTR/RTS when the last fd closes. On a
-Nucleo ST-Link VCP those lines are not wired to NRST and nothing should happen —
-but on an FTDI cable or a board that wires DTR to reset, **every invocation would
-reboot the MCU**, wiping the pin configuration the previous invocation set up.
-
-A one-shot, flag-driven CLI depends entirely on MCU state surviving between
-invocations, so this is worth one experiment before building on it:
-
-```sh
-mcu-co-cli -s gpio -c cfg -p A5 -d output
-mcu-co-cli -s gpio -c set -p A5 -l high     # does this succeed?
+```c
+tty.c_cflag &= (tcflag_t)~HUPCL;
 ```
 
-If the second command returns `ERR_INVALID_STATE`, the direction did not survive
-and `HUPCL` needs clearing in `configure_port()`.
+`cfmakeraw()` does not clear it, which is why it is not already there.
 
 ## Deferred
 
