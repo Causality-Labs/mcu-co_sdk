@@ -1,157 +1,187 @@
+#include <errno.h>
 #include <stdio.h>
+#include <stdlib.h>
+#include <getopt.h>
+#include <stdbool.h>
+#include <stdint.h>
 #include <string.h>
-
-#define EXIT_OK    0
-#define EXIT_USAGE 2
-
-#define ARRAY_COUNT(array) (sizeof(array) / sizeof((array)[0]))
+#include "mcuco_args.h"
+#include "mcuco_command.h"
+#include "mcuco.h"
 
 typedef struct
 {
-    const char *name;
-    const char *flags;
-    const char *summary;
-} verb_t;
+    char *device_path;
+    uint16_t timeout;
+    bool help;
+    bool version;
+} config_t;
 
-/* Nested rather than one flat table of all sixteen commands: a verb cannot
- * then name a subsystem that does not exist, and the subsystem list needs no
- * de-duplicating. */
-typedef struct
+static void print_help(void)
 {
-    const char *name;
-    const char *summary;
-    const verb_t *verbs;
-    size_t verb_count;
-} subsystem_t;
+    fprintf(stdout, "usage: mcu-co-cli <subsystem> <verb> <values...> [--options anywhere]\n");
+    fprintf(stdout, "\n");
+    fprintf(stdout, "  mcu    probe                                     check the link\n");
+    fprintf(stdout, "         reset                                     reboot the MCU\n");
+    fprintf(stdout, "\n");
+    fprintf(stdout, "  gpio   cfg      <input|output> <pin>             set a pin's direction\n");
+    fprintf(stdout, "         set      <low|high> <pin>                 drive an output pin\n");
+    fprintf(stdout, "         get      <pin>                            -> low | high\n");
+    fprintf(stdout, "         toggle   <pin>                            -> the level after the flip\n");
+    fprintf(stdout, "\n");
+    fprintf(stdout, "  irq    cfg      <off|rising|falling|both> <pin>  arm or disarm a trigger\n");
+    fprintf(stdout, "         bind     <edge> <pin> <action> <pin>      drive one pin from another\n");
+    fprintf(stdout, "         unbind   <pin>                            drop the action, stay armed\n");
+    fprintf(stdout, "\n");
+    fprintf(stdout, "  timer  cfg      <1-1000000> <0-2>                Hz, then which timer\n");
+    fprintf(stdout, "         get      <0-2>                            -> achieved Hz\n");
+    fprintf(stdout, "         release  <0-2>                            stop it, freezing its pins\n");
+    fprintf(stdout, "\n");
+    fprintf(stdout, "  pwm    cfg      <active-high|active-low> <pin>   claim a pin, silent at 0%%\n");
+    fprintf(stdout, "         set      <0-100> <pin>                    percent, then the pin\n");
+    fprintf(stdout, "         get      <pin>                            -> percent, one decimal\n");
+    fprintf(stdout, "         release  <pin>                            free one pin\n");
+    fprintf(stdout, "\n");
+    fprintf(stdout, "  edge    off | rising | falling | both            off is invalid for bind\n");
+    fprintf(stdout, "  action  low | high | toggle\n");
+    fprintf(stdout, "  pin     two words, port then number: A 5 - ports A-G in capitals, 0-15\n");
+    fprintf(stdout, "\n");
+    fprintf(stdout, "pwm pins, by timer (from firmware peripherals/timer.c):\n");
+    fprintf(stdout, "  timer 0   TIM2    A5     A1     B10    B11\n");
+    fprintf(stdout, "  timer 1   TIM3    C6     C7     C8     C9\n");
+    fprintf(stdout, "  timer 2   TIM4    B6     B7     B8     B9\n");
+    fprintf(stdout, "\n");
+    fprintf(stdout, "  Reference only. The MCU resolves which channel a pin is and refuses a pin\n");
+    fprintf(stdout, "  with none; no command takes a timer for a pwm operation.\n");
+    fprintf(stdout, "\n");
+    fprintf(stdout, "options, valid on every command and in any position:\n");
+    fprintf(stdout, "  -d, --device <path>    serial port    [$MCUCO_DEVICE, then /dev/ttyACM0]\n");
+    fprintf(stdout, "  -t, --timeout <ms>     deadline       [1000]\n");
+    fprintf(stdout, "  -h, --help\n");
+    fprintf(stdout, "  -V, --version\n");
+}
 
-static const verb_t gpio_verbs[] = {
-    {"cfg", "-p <pin> -d <input|output>", "set a pin's direction"},
-    {"set", "-p <pin> -l <low|high>", "drive an output pin"},
-    {"get", "-p <pin>", "read an input pin"},
-    {"toggle", "-p <pin>", "flip an output pin and report the level it reached"},
-};
-
-static const verb_t irq_verbs[] = {
-    {"cfg", "-p <pin> -e <off|rising|falling|both>", "arm or disarm a trigger"},
-    {"bind", "-p <pin> -e <rising|falling|both> -a <low|high|toggle> --to <pin>", "drive a pin from a trigger"},
-    {"unbind", "-p <pin>", "drop a binding, leaving the trigger armed"},
-};
-
-static const verb_t timer_verbs[] = {
-    {"cfg", "-T <0-2> -f <1-1000000>", "set a timer's frequency and start it"},
-    {"get", "-T <0-2>", "read a timer's achieved frequency"},
-    {"release", "-T <0-2>", "stop a timer and free its four pins"},
-};
-
-static const verb_t pwm_verbs[] = {
-    {"cfg", "-p <pin> [--polarity <active-high|active-low>]", "claim a pin, silent at 0%"},
-    {"set", "-p <pin> -u <percent>", "set a claimed pin's duty cycle"},
-    {"get", "-p <pin>", "read back a pin's duty cycle"},
-    {"release", "-p <pin>", "free one pin, leaving its timer running"},
-};
-
-static const verb_t mcu_verbs[] = {
-    {"probe", "", "confirm mcu-co is on the other end"},
-    {"reset", "", "reboot the co-processor"},
-};
-
-static const subsystem_t subsystems[] = {
-    {"gpio", "pin direction, level and toggling", gpio_verbs, ARRAY_COUNT(gpio_verbs)},
-    {"irq", "EXTI triggers and pin-to-pin bindings", irq_verbs, ARRAY_COUNT(irq_verbs)},
-    {"timer", "PWM frequency groups", timer_verbs, ARRAY_COUNT(timer_verbs)},
-    {"pwm", "per-pin duty cycle", pwm_verbs, ARRAY_COUNT(pwm_verbs)},
-    {"mcu", "the co-processor itself", mcu_verbs, ARRAY_COUNT(mcu_verbs)},
-};
-
-static const subsystem_t *find_subsystem(const char *name)
+static int parse_timeout(const char *word, uint16_t *timeout_ms)
 {
-    for (size_t index = 0; index < ARRAY_COUNT(subsystems); index++)
+    errno               = 0;
+    char *end           = NULL;
+    unsigned long value = strtoul(word, &end, 10);
+
+    if (errno != 0 || end == word || *end != '\0' || value < 1UL || value > UINT16_MAX)
     {
-        if (strcmp(subsystems[index].name, name) == 0)
+        return -1;
+    }
+
+    *timeout_ms = (uint16_t)value;
+
+    return 0;
+}
+
+static int parse_config(int argc, char **argv, config_t *config)
+{
+    static const struct option longopts[] = {
+        {"device", required_argument, NULL, 'd'},
+        {"timeout", required_argument, NULL, 't'},
+        {"help", no_argument, NULL, 'h'},
+        {"version", no_argument, NULL, 'V'},
+        {NULL, 0, NULL, 0},
+    };
+
+    static const char *const shortopts = "d:t:hV";
+
+    (void)memset(config, 0, sizeof(config_t));
+    config->timeout     = 1000U;
+    config->device_path = "/dev/ttyACM0";
+
+    int opti = 0;
+    int optc = 0;
+
+    for (;;)
+    {
+        optc = getopt_long(argc, argv, shortopts, longopts, &opti);
+        if (optc < 0)
         {
-            return &subsystems[index];
+            break;
+        }
+
+        switch (optc)
+        {
+        case 'd':
+            config->device_path = optarg;
+            break;
+
+        case 't':
+            if (parse_timeout(optarg, &config->timeout) != 0)
+            {
+                fprintf(stderr, "mcu-co-cli: bad timeout '%s' (1-%u ms)\n", optarg, (unsigned)UINT16_MAX);
+                return -1;
+            }
+            break;
+
+        case 'h':
+            config->help = true;
+            break;
+
+        case 'V':
+            config->version = true;
+            break;
+
+        default:
+            return -1;
         }
     }
 
-    return NULL;
-}
-
-static const verb_t *find_verb(const subsystem_t *subsystem, const char *name)
-{
-    for (size_t index = 0; index < subsystem->verb_count; index++)
-    {
-        if (strcmp(subsystem->verbs[index].name, name) == 0)
-        {
-            return &subsystem->verbs[index];
-        }
-    }
-
-    return NULL;
-}
-
-static void print_subsystems(FILE *stream)
-{
-    fprintf(stream, "usage: mcu-co-cli <subsystem> <verb> [flags]\n\n");
-
-    for (size_t index = 0; index < ARRAY_COUNT(subsystems); index++)
-    {
-        fprintf(stream, "  %-7s %s\n", subsystems[index].name, subsystems[index].summary);
-    }
-}
-
-static void print_verbs(FILE *stream, const subsystem_t *subsystem)
-{
-    fprintf(stream, "usage: mcu-co-cli %s <verb> [flags]\n\n", subsystem->name);
-
-    for (size_t index = 0; index < subsystem->verb_count; index++)
-    {
-        fprintf(stream, "  %-8s %s\n", subsystem->verbs[index].name, subsystem->verbs[index].summary);
-    }
-}
-
-static void print_verb(const subsystem_t *subsystem, const verb_t *verb)
-{
-    /* probe and reset take no flags, so the separator would otherwise leave a
-     * trailing space. */
-    const char *separator = (verb->flags[0] != '\0') ? " " : "";
-
-    printf("usage: mcu-co-cli %s %s%s%s\n\n", subsystem->name, verb->name, separator, verb->flags);
-    printf("  %s\n", verb->summary);
+    return optind;
 }
 
 int main(int argc, char **argv)
 {
-    if (argc < 2)
+    config_t config = {0};
+
+    int word_index = parse_config(argc, argv, &config);
+
+    if (word_index <= 0)
     {
-        print_subsystems(stdout);
-        return EXIT_OK;
+        fprintf(stderr, "usage: mcu-co-cli <subsystem> <verb> <values...> [--options anywhere]\n");
+        return 1;
     }
 
-    const subsystem_t *subsystem = find_subsystem(argv[1]);
-
-    if (subsystem == NULL)
+    if (config.help == true)
     {
-        fprintf(stderr, "mcu-co-cli: unknown subsystem '%s'\n\n", argv[1]);
-        print_subsystems(stderr);
-        return EXIT_USAGE;
+        print_help();
+        return 0;
     }
 
-    if (argc < 3)
+    if (config.version == true)
     {
-        print_verbs(stdout, subsystem);
-        return EXIT_OK;
+        // print_version();
+        return 0;
     }
 
-    const verb_t *verb = find_verb(subsystem, argv[2]);
-
-    if (verb == NULL)
+    mcuco_args_t mcuco_args = {0};
+    if (args_parse_mcuco(argc - word_index, &argv[word_index], &mcuco_args) != 0)
     {
-        fprintf(stderr, "mcu-co-cli: unknown verb '%s' for %s\n\n", argv[2], subsystem->name);
-        print_verbs(stderr, subsystem);
-        return EXIT_USAGE;
+        fprintf(stderr, "mcu-co-cli: bad command\n");
+        print_help();
+        return 1;
     }
 
-    print_verb(subsystem, verb);
+    mcuco_t *mcu = mcuco_open(config.device_path, config.timeout);
+    if (mcu == NULL)
+    {
+        fprintf(stderr, "mcu-co-cli: could not open mcuco device\n");
+        return 1;
+    }
 
-    return EXIT_OK;
+    mcu_status_t status = mcuco_run_command(mcu, &mcuco_args);
+
+    mcuco_close(mcu);
+
+    if (status != STATUS_OK)
+    {
+        fprintf(stderr, "%s\n", mcuco_strerror(status));
+        return 1;
+    }
+
+    return 0;
 }

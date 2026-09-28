@@ -75,7 +75,7 @@ The layers are visible in the file names; what isn't:
 - **No `goto`.** If cleanup seems to need one, the function is doing two jobs — split
   it so each owns one resource, as `uart_open` / `configure_port` do.
 - Error handling is return-code based: `0` or a positive count on success, a negative
-  `errno` on failure.
+  integer on failure.
 
 ## Comments — do not over-comment
 
