@@ -79,3 +79,47 @@ TEST(McucoSpy, ResetForgetsEverything)
     LONGS_EQUAL(CALL_NONE, mcuco_spy()->last_call);
     LONGS_EQUAL(STATUS_OK, mcuco_spy()->next_status);
 }
+
+TEST(McucoSpy, WritesTheCannedFrequencyOnlyWhenItAnswersOk)
+{
+    uint32_t achieved_hz = 0;
+
+    mcuco_spy()->next_frequency_hz = 999;
+    LONGS_EQUAL(STATUS_OK, mcuco_pwm_group_get(mcuco_spy_handle(), 2, &achieved_hz));
+    LONGS_EQUAL(999, achieved_hz);
+    LONGS_EQUAL(2, mcuco_spy()->group);
+
+    achieved_hz              = 0;
+    mcuco_spy()->next_status = STATUS_ERR_NOT_INIT;
+    LONGS_EQUAL(STATUS_ERR_NOT_INIT, mcuco_pwm_group_get(mcuco_spy_handle(), 2, &achieved_hz));
+    LONGS_EQUAL(0, achieved_hz);
+}
+
+TEST(McucoSpy, WritesTheCannedDutyOnlyWhenItAnswersOk)
+{
+    uint16_t duty = 0;
+
+    mcuco_spy()->next_duty = 250;
+    LONGS_EQUAL(STATUS_OK, mcuco_pwm_channel_get(mcuco_spy_handle(), PORT_B, 9, &duty));
+    LONGS_EQUAL(250, duty);
+    LONGS_EQUAL(PORT_B, mcuco_spy()->port);
+    LONGS_EQUAL(9, mcuco_spy()->pin);
+
+    duty                     = 0;
+    mcuco_spy()->next_status = STATUS_ERR_NOT_INIT;
+    LONGS_EQUAL(STATUS_ERR_NOT_INIT, mcuco_pwm_channel_get(mcuco_spy_handle(), PORT_B, 9, &duty));
+    LONGS_EQUAL(0, duty);
+}
+
+TEST(McucoSpy, RecordsBothPinsOfABindSeparately)
+{
+    (void)mcuco_gpio_irq_bind(mcuco_spy_handle(), EDGE_FALLING, PORT_B, 5, ACTION_TOGGLE, PORT_C, 7);
+
+    LONGS_EQUAL(CALL_IRQ_BIND, mcuco_spy()->last_call);
+    LONGS_EQUAL(EDGE_FALLING, mcuco_spy()->edge);
+    LONGS_EQUAL(PORT_B, mcuco_spy()->port);
+    LONGS_EQUAL(5, mcuco_spy()->pin);
+    LONGS_EQUAL(ACTION_TOGGLE, mcuco_spy()->action);
+    LONGS_EQUAL(PORT_C, mcuco_spy()->out_port);
+    LONGS_EQUAL(7, mcuco_spy()->out_pin);
+}

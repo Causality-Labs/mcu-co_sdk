@@ -20,6 +20,16 @@ typedef enum
     CALL_GPIO_SET,
     CALL_GPIO_GET,
     CALL_GPIO_TOGGLE,
+    CALL_PWM_GROUP_CFG,
+    CALL_PWM_GROUP_GET,
+    CALL_PWM_GROUP_RELEASE,
+    CALL_PWM_CHANNEL_CFG,
+    CALL_PWM_CHANNEL_SET,
+    CALL_PWM_CHANNEL_GET,
+    CALL_PWM_CHANNEL_RELEASE,
+    CALL_IRQ_CFG,
+    CALL_IRQ_BIND,
+    CALL_IRQ_UNBIND,
 } mcuco_call_t;
 
 typedef struct
@@ -37,10 +47,20 @@ typedef struct
     uint8_t pin;
     dir_t direction;
     level_t level;
+    uint32_t frequency_hz;
+    uint8_t group;
+    polarity_t polarity;
+    uint16_t duty;
+    edge_t edge;
+    action_t action;
+    port_t out_port;
+    uint8_t out_pin;
 
     /* What it hands back. Set these before the call. */
     mcu_status_t next_status;
     level_t next_level;
+    uint32_t next_frequency_hz;
+    uint16_t next_duty;
 } mcuco_spy_t;
 
 /* Forgets every recorded call and sets the canned answers back to STATUS_OK and
