@@ -73,19 +73,23 @@ static const command_t commands[] = {
     {"mcu",   "probe",   0, {WORD_NONE},                            run_probe,       "",                            "check the link"},
     {"mcu",   "reset",   0, {WORD_NONE},                            run_reset,       "",                            "reboot the MCU"},
 
-    {"gpio",  "cfg",     3, {WORD_DIRECTION, WORD_PORT, WORD_PIN},  run_gpio_cfg,    "<input|output> <port> <pin>", "set a pin's direction"},
-    {"gpio",  "set",     3, {WORD_LEVEL, WORD_PORT, WORD_PIN},      run_gpio_set,    "<low|high> <port> <pin>",     "drive an output pin"},
-    {"gpio",  "get",     2, {WORD_PORT, WORD_PIN},                  run_gpio_get,    "<port> <pin>",                "-> low | high"},
-    {"gpio",  "toggle",  2, {WORD_PORT, WORD_PIN},                  run_gpio_toggle, "<port> <pin>",                "-> the level after the flip"},
+    {"gpio",  "cfg",     3, {WORD_DIRECTION, WORD_PORT, WORD_PIN},  run_gpio_cfg,    "<input|output> <pin>", "set a pin's direction"},
+    {"gpio",  "set",     3, {WORD_LEVEL, WORD_PORT, WORD_PIN},      run_gpio_set,    "<low|high> <pin>",     "drive an output pin"},
+    {"gpio",  "get",     2, {WORD_PORT, WORD_PIN},                  run_gpio_get,    "<pin>",                "-> low | high"},
+    {"gpio",  "toggle",  2, {WORD_PORT, WORD_PIN},                  run_gpio_toggle, "<pin>",                "-> the level after the flip"},
 
     {"timer", "cfg",     2, {WORD_FREQUENCY, WORD_TIMER},           run_not_wired,   "<1-1000000> <0-2>",           "Hz, then which timer"},
     {"timer", "get",     1, {WORD_TIMER},                           run_not_wired,   "<0-2>",                       "-> achieved Hz"},
     {"timer", "release", 1, {WORD_TIMER},                           run_not_wired,   "<0-2>",                       "stop it, freezing its pins"},
 
-    {"pwm",   "cfg",     3, {WORD_POLARITY, WORD_PORT, WORD_PIN},   run_not_wired,   "<polarity> <port> <pin>",     "claim a pin, silent at 0%"},
-    {"pwm",   "set",     3, {WORD_DUTY, WORD_PORT, WORD_PIN},       run_not_wired,   "<0-100> <port> <pin>",        "percent, then the pin"},
-    {"pwm",   "get",     2, {WORD_PORT, WORD_PIN},                  run_not_wired,   "<port> <pin>",                "-> percent, one decimal"},
-    {"pwm",   "release", 2, {WORD_PORT, WORD_PIN},                  run_not_wired,   "<port> <pin>",                "free one pin"},
+    {"pwm",   "cfg",     3, {WORD_POLARITY, WORD_PORT, WORD_PIN},   run_not_wired,   "<polarity> <pin>",     "claim a pin, silent at 0%"},
+    {"pwm",   "set",     3, {WORD_DUTY, WORD_PORT, WORD_PIN},       run_not_wired,   "<0-100> <pin>",        "percent, then the pin"},
+    {"pwm",   "get",     2, {WORD_PORT, WORD_PIN},                  run_not_wired,   "<pin>",                "-> percent, one decimal"},
+    {"pwm",   "release", 2, {WORD_PORT, WORD_PIN},                  run_not_wired,   "<pin>",                "free one pin"},
+
+    {"irq",   "cfg",     3, {WORD_EDGE, WORD_PORT, WORD_PIN},       run_not_wired,   "<edge> <pin>",         "arm or disarm a trigger"},
+    {"irq",   "bind",    6, {WORD_BIND_EDGE, WORD_PORT, WORD_PIN, WORD_ACTION, WORD_OUT_PORT, WORD_OUT_PIN}, run_not_wired,   "<edge> <pin> <action> <pin>", "drive one pin from another"},
+    {"irq",   "unbind",  2, {WORD_PORT, WORD_PIN},                  run_not_wired,   "<pin>",                "drop the action, stay armed"},
 };
 // clang-format on
 

@@ -243,5 +243,5 @@ TEST(McucoCommand, EveryCommandInTheTableIsListed)
     }
 
     CHECK(strstr(printed, "  pwm    ") != NULL);
-    CHECK(strstr(printed, "irq") == NULL);
+    CHECK(strstr(printed, "  irq    ") != NULL);
 }

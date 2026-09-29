@@ -24,6 +24,8 @@ static void print_help(void)
     mcuco_print_commands(stdout);
     fprintf(stdout, "\n");
     fprintf(stdout, "  a pin is two words, port then number: A 5 - ports A-G in capitals, 0-15\n");
+    fprintf(stdout, "  edge is off, rising, falling or both - bind takes all but off\n");
+    fprintf(stdout, "  action is low, high or toggle\n");
     fprintf(stdout, "  polarity is active-high or active-low\n");
     fprintf(stdout, "\n");
     fprintf(stdout, "pwm pins, by timer (from firmware peripherals/timer.c):\n");

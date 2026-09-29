@@ -145,6 +145,68 @@ static int parse_duty(const char *word, uint16_t *duty_tenths)
     return 0;
 }
 
+static int parse_edge(const char *word, edge_t *edge)
+{
+    if (strcmp(word, "off") == 0)
+    {
+        *edge = EDGE_OFF;
+        return 0;
+    }
+
+    if (strcmp(word, "rising") == 0)
+    {
+        *edge = EDGE_RISING;
+        return 0;
+    }
+
+    if (strcmp(word, "falling") == 0)
+    {
+        *edge = EDGE_FALLING;
+        return 0;
+    }
+
+    if (strcmp(word, "both") == 0)
+    {
+        *edge = EDGE_BOTH;
+        return 0;
+    }
+
+    return -1;
+}
+
+static int parse_bind_edge(const char *word, edge_t *edge)
+{
+    if (strcmp(word, "off") == 0)
+    {
+        return -1;
+    }
+
+    return parse_edge(word, edge);
+}
+
+static int parse_action(const char *word, action_t *action)
+{
+    if (strcmp(word, "low") == 0)
+    {
+        *action = ACTION_LOW;
+        return 0;
+    }
+
+    if (strcmp(word, "high") == 0)
+    {
+        *action = ACTION_HIGH;
+        return 0;
+    }
+
+    if (strcmp(word, "toggle") == 0)
+    {
+        *action = ACTION_TOGGLE;
+        return 0;
+    }
+
+    return -1;
+}
+
 static int parse_value(word_kind_t kind, const char *word, mcuco_args_t *mcuco_args)
 {
     switch (kind)
@@ -172,6 +234,21 @@ static int parse_value(word_kind_t kind, const char *word, mcuco_args_t *mcuco_a
 
     case WORD_DUTY:
         return parse_duty(word, &mcuco_args->duty_tenths);
+
+    case WORD_EDGE:
+        return parse_edge(word, &mcuco_args->edge);
+
+    case WORD_BIND_EDGE:
+        return parse_bind_edge(word, &mcuco_args->edge);
+
+    case WORD_ACTION:
+        return parse_action(word, &mcuco_args->action);
+
+    case WORD_OUT_PORT:
+        return parse_port(word, &mcuco_args->out_port);
+
+    case WORD_OUT_PIN:
+        return parse_pin(word, &mcuco_args->out_pin);
 
     case WORD_NONE:
         break;

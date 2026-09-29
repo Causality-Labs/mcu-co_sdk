@@ -189,13 +189,6 @@ TEST(McucoArgs, ThePinMustBeZeroToFifteen)
     CHECK_TRUE(rejected("gpio get A 99999999999999999999"));
 }
 
-/* irq has no rows in the command table yet, so it is neither parsed nor offered
- * by --help. */
-TEST(McucoArgs, SubsystemsThatAreNotImplementedYetAreRejected)
-{
-    CHECK_TRUE(rejected("irq cfg rising B 5"));
-}
-
 /* --- assign_timer_system --- */
 
 TEST(McucoArgs, TimerGetReachesTheTimerIndex)
@@ -421,4 +414,160 @@ TEST(McucoArgs, AVerbPwmDoesNotHaveIsRejected)
     CHECK_TRUE(rejected("pwm toggle A 5"));
     CHECK_TRUE(rejected("pwm bind 25 A 5"));
     CHECK_TRUE(rejected("pwm probe"));
+}
+
+/* --- irq --- */
+
+TEST(McucoArgs, IrqUnbindReachesThePortAndPin)
+{
+    mcuco_args_t mcuco_args = {};
+
+    LONGS_EQUAL(0, parse("irq unbind B 5", &mcuco_args));
+    expect_command(mcuco_args, "irq", "unbind");
+    LONGS_EQUAL(PORT_B, mcuco_args.port);
+    LONGS_EQUAL(5, mcuco_args.pin);
+}
+
+TEST(McucoArgs, IrqCfgReachesTheEdgePortAndPin)
+{
+    mcuco_args_t mcuco_args = {};
+
+    LONGS_EQUAL(0, parse("irq cfg rising B 5", &mcuco_args));
+    expect_command(mcuco_args, "irq", "cfg");
+    LONGS_EQUAL(EDGE_RISING, mcuco_args.edge);
+    LONGS_EQUAL(PORT_B, mcuco_args.port);
+    LONGS_EQUAL(5, mcuco_args.pin);
+}
+
+TEST(McucoArgs, IrqCfgAcceptsFallingAndBoth)
+{
+    mcuco_args_t mcuco_args = {};
+
+    LONGS_EQUAL(0, parse("irq cfg falling B 5", &mcuco_args));
+    LONGS_EQUAL(EDGE_FALLING, mcuco_args.edge);
+
+    LONGS_EQUAL(0, parse("irq cfg both B 5", &mcuco_args));
+    LONGS_EQUAL(EDGE_BOTH, mcuco_args.edge);
+}
+
+/* off is the disarm: it clears the pin's trigger and any binding on it. */
+TEST(McucoArgs, IrqCfgAcceptsOff)
+{
+    mcuco_args_t mcuco_args = {};
+    mcuco_args.edge         = EDGE_BOTH;
+
+    LONGS_EQUAL(0, parse("irq cfg off B 5", &mcuco_args));
+    LONGS_EQUAL(EDGE_OFF, mcuco_args.edge);
+}
+
+/* The one command with two pins. The output pin has its own word kinds so it
+ * lands in out_port / out_pin rather than overwriting the trigger pin - the only
+ * place positional order can silently do the wrong thing. */
+TEST(McucoArgs, IrqBindKeepsTheTriggerPinAndTheOutputPinApart)
+{
+    mcuco_args_t mcuco_args = {};
+
+    LONGS_EQUAL(0, parse("irq bind rising B 5 high C 7", &mcuco_args));
+    expect_command(mcuco_args, "irq", "bind");
+    LONGS_EQUAL(EDGE_RISING, mcuco_args.edge);
+    LONGS_EQUAL(PORT_B, mcuco_args.port);
+    LONGS_EQUAL(5, mcuco_args.pin);
+    LONGS_EQUAL(ACTION_HIGH, mcuco_args.action);
+    LONGS_EQUAL(PORT_C, mcuco_args.out_port);
+    LONGS_EQUAL(7, mcuco_args.out_pin);
+}
+
+TEST(McucoArgs, IrqBindAcceptsLowAndToggle)
+{
+    mcuco_args_t mcuco_args = {};
+    mcuco_args.action       = ACTION_HIGH;
+
+    LONGS_EQUAL(0, parse("irq bind falling B 5 low C 7", &mcuco_args));
+    LONGS_EQUAL(ACTION_LOW, mcuco_args.action);
+
+    LONGS_EQUAL(0, parse("irq bind both B 5 toggle C 7", &mcuco_args));
+    LONGS_EQUAL(ACTION_TOGGLE, mcuco_args.action);
+}
+
+/* EXTI cannot report which edge fired, so a binding has to name a real one. off
+ * is only meaningful to cfg, where it disarms the pin. */
+TEST(McucoArgs, IrqBindRejectsOffTheEdgeCfgAccepts)
+{
+    CHECK_TRUE(rejected("irq bind off B 5 high C 7"));
+}
+
+TEST(McucoArgs, AnEdgeMustBeOneOfTheFourWords)
+{
+    CHECK_TRUE(rejected("irq cfg RISING B 5"));
+    CHECK_TRUE(rejected("irq cfg rise B 5"));
+    CHECK_TRUE(rejected("irq cfg none B 5"));
+    CHECK_TRUE(rejected("irq bind RISING B 5 high C 7"));
+}
+
+TEST(McucoArgs, AnActionMustBeOneOfTheThreeWords)
+{
+    CHECK_TRUE(rejected("irq bind rising B 5 on C 7"));
+    CHECK_TRUE(rejected("irq bind rising B 5 HIGH C 7"));
+    CHECK_TRUE(rejected("irq bind rising B 5 flip C 7"));
+}
+
+/* Each of bind's two pins is checked on its own account. */
+TEST(McucoArgs, ABadPinOnEitherSideOfABindIsRejected)
+{
+    CHECK_TRUE(rejected("irq bind rising H 5 high C 7"));
+    CHECK_TRUE(rejected("irq bind rising B 16 high C 7"));
+    CHECK_TRUE(rejected("irq bind rising B 5 high H 7"));
+    CHECK_TRUE(rejected("irq bind rising B 5 high C 16"));
+}
+
+TEST(McucoArgs, TheWrongNumberOfWordsIsRejectedForEveryIrqVerb)
+{
+    CHECK_TRUE(rejected("irq cfg rising B"));
+    CHECK_TRUE(rejected("irq cfg rising B 5 5"));
+    CHECK_TRUE(rejected("irq bind rising B 5 high C"));
+    CHECK_TRUE(rejected("irq bind rising B 5 high C 7 7"));
+    CHECK_TRUE(rejected("irq unbind B"));
+    CHECK_TRUE(rejected("irq unbind B 5 5"));
+    CHECK_TRUE(rejected("irq"));
+}
+
+TEST(McucoArgs, AVerbIrqDoesNotHaveIsRejected)
+{
+    CHECK_TRUE(rejected("irq set high B 5"));
+    CHECK_TRUE(rejected("irq get B 5"));
+    CHECK_TRUE(rejected("irq release B 5"));
+}
+
+/* --- the whole table --- */
+
+/* One example per row. A row whose value_count disagrees with its value list
+ * cannot parse its own example, so this is what makes a wrong count impossible
+ * to miss. A new row needs a new line here. */
+TEST(McucoArgs, EveryCommandInTheTableParsesFromAnExample)
+{
+    static const char *const EXAMPLES[] = {
+        "mcu probe",
+        "mcu reset",
+        "gpio cfg output A 5",
+        "gpio set high A 5",
+        "gpio get A 5",
+        "gpio toggle A 5",
+        "timer cfg 1000 0",
+        "timer get 0",
+        "timer release 0",
+        "pwm cfg active-high A 5",
+        "pwm set 25 A 5",
+        "pwm get A 5",
+        "pwm release A 5",
+        "irq cfg rising B 5",
+        "irq bind rising B 5 toggle A 0",
+        "irq unbind B 5",
+    };
+
+    for (size_t index = 0; index < sizeof(EXAMPLES) / sizeof(EXAMPLES[0]); index++)
+    {
+        mcuco_args_t mcuco_args = {};
+
+        LONGS_EQUAL_TEXT(0, parse(EXAMPLES[index], &mcuco_args), EXAMPLES[index]);
+    }
 }

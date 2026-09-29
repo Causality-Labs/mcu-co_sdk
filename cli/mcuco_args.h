@@ -18,6 +18,11 @@ typedef enum
     WORD_TIMER,
     WORD_POLARITY,
     WORD_DUTY,
+    WORD_EDGE,
+    WORD_BIND_EDGE,
+    WORD_ACTION,
+    WORD_OUT_PORT,
+    WORD_OUT_PIN,
 } word_kind_t;
 
 /* irq bind, the longest command, will take six. */
@@ -51,6 +56,10 @@ struct mcuco_args
     uint8_t timer;
     polarity_t polarity;
     uint16_t duty_tenths;
+    edge_t edge;
+    action_t action;
+    port_t out_port;
+    uint8_t out_pin;
 };
 
 /* Parses the words left after the program name and its options. Returns 0,

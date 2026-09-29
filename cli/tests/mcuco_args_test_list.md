@@ -1,4 +1,4 @@
-# Test list — `cli/mcuco_args.c`, the irq and pwm commands
+# Test list — `cli/mcuco_args.c` — all sixteen commands parse
 
 `mcu`, `gpio` and `timer` are done and covered by `cli/tests/test_mcuco_args.cpp`.
 
@@ -67,14 +67,53 @@ New kinds: `WORD_POLARITY`, `WORD_DUTY`. New fields: `polarity`, `duty_tenths`.
 - [x] `pwm toggle A 5` and `pwm bind 25 A 5` are rejected
 - [x] `pwm set 25 A 5 0` is rejected — no pwm command takes a timer
 
-## irq — after pwm
+## irq — done
 
 ```
 irq   cfg      <off|rising|falling|both> <port> <pin>                    3 values
-      bind     <edge> <port> <pin> <low|high|toggle> <port> <pin>        6
+      bind     <rising|falling|both> <port> <pin> <low|high|toggle> <port> <pin>   6
       unbind   <port> <pin>                                              2
 ```
 
-New kinds: `WORD_EDGE`, `WORD_ACTION`, `WORD_OUT_PORT`, `WORD_OUT_PIN`. The
-second pin needs its own kinds so it lands in `out_port` / `out_pin` rather than
-overwriting the trigger pin. Its checklist is written when pwm is done.
+New fields: `edge`, `action`, `out_port`, `out_pin`.
+
+New kinds:
+
+- `WORD_EDGE` — `off`, `rising`, `falling`, `both`, for `irq cfg`
+- `WORD_BIND_EDGE` — the same minus `off`, for `irq bind`
+- `WORD_ACTION` — `low`, `high`, `toggle`
+- `WORD_OUT_PORT`, `WORD_OUT_PIN` — the second pin of `bind`, so it lands in
+  `out_port` / `out_pin` instead of overwriting the trigger pin
+
+**Why a second edge kind.** `off` is legal for `cfg` and illegal for `bind`,
+because EXTI cannot report which edge fired and a binding has to name a real one.
+Giving `bind` its own word kind puts that rule in the table like every other
+rule, instead of a special case in `args_parse_mcuco` that checks which command
+it is parsing.
+
+### Rows
+- [x] `irq unbind B 5` reaches the port and pin
+- [x] `irq cfg rising B 5` reaches the edge, port and pin
+- [x] `irq bind rising B 5 high C 7` puts B 5 in the trigger pin and C 7 in the
+      output pin, not the other way round
+
+### Edge
+- [x] `rising`, `falling`, `both` are accepted by `cfg`
+- [x] `off` is accepted by `cfg` — that is the disarm
+- [x] `off` is rejected by `bind`
+- [x] `RISING`, `rise` and `none` are rejected
+
+### Action
+- [x] `low`, `high`, `toggle` are accepted
+- [x] `on`, `HIGH` and `flip` are rejected
+
+### Shape
+- [x] a bad value in either of `bind`'s pins is rejected
+- [x] every irq verb is rejected one word short and one word long
+- [x] `irq set high B 5` and `irq get B 5` are rejected
+
+## Last — done
+
+- [x] one example line per command in the table, all sixteen, each parses —
+      the guarantee that every row has a passing parse, so a wrong
+      `value_count` can never go unnoticed
