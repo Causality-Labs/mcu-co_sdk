@@ -1,4 +1,7 @@
+#include <stdbool.h>
 #include <stdio.h>
+#include <string.h>
+
 #include "mcuco_command.h"
 
 static void print_level(level_t level)
@@ -6,99 +9,123 @@ static void print_level(level_t level)
     printf("%s\n", (level == LEVEL_HIGH) ? "high" : "low");
 }
 
-static mcu_status_t run_mcu(mcuco_t *mcu, const mcu_system_t *mcu_system)
+static mcu_status_t run_probe(mcuco_t *mcu, const mcuco_args_t *mcuco_args)
 {
-    switch (mcu_system->verb)
-    {
-    case PROBE:
-        return mcuco_probe(mcu);
+    (void)mcuco_args;
 
-    case RESET:
-        return mcuco_reset(mcu);
-
-    default:
-        return STATUS_ERR_ARG;
-    }
+    return mcuco_probe(mcu);
 }
 
-static mcu_status_t run_gpio(mcuco_t *mcu, const gpio_system_t *gpio)
+static mcu_status_t run_reset(mcuco_t *mcu, const mcuco_args_t *mcuco_args)
+{
+    (void)mcuco_args;
+
+    return mcuco_reset(mcu);
+}
+
+static mcu_status_t run_gpio_cfg(mcuco_t *mcu, const mcuco_args_t *mcuco_args)
+{
+    return mcuco_gpio_cfg(mcu, mcuco_args->direction, mcuco_args->port, mcuco_args->pin);
+}
+
+static mcu_status_t run_gpio_set(mcuco_t *mcu, const mcuco_args_t *mcuco_args)
+{
+    return mcuco_gpio_set(mcu, mcuco_args->level, mcuco_args->port, mcuco_args->pin);
+}
+
+static mcu_status_t run_gpio_get(mcuco_t *mcu, const mcuco_args_t *mcuco_args)
 {
     level_t level = LEVEL_LOW;
-    mcu_status_t status;
 
-    switch (gpio->verb)
+    mcu_status_t status = mcuco_gpio_get(mcu, mcuco_args->port, mcuco_args->pin, &level);
+    if (status == STATUS_OK)
     {
-    case CONFIG:
-        return mcuco_gpio_cfg(mcu, gpio->direction, gpio->port, gpio->pin);
-
-    case SET:
-        return mcuco_gpio_set(mcu, gpio->level, gpio->port, gpio->pin);
-
-    case GET:
-        status = mcuco_gpio_get(mcu, gpio->port, gpio->pin, &level);
-        if (status == STATUS_OK)
-        {
-            print_level(level);
-        }
-        return status;
-
-    case TOGGLE:
-        status = mcuco_gpio_toggle(mcu, gpio->port, gpio->pin, &level);
-        if (status == STATUS_OK)
-        {
-            print_level(level);
-        }
-        return status;
-
-    default:
-        return STATUS_ERR_ARG;
+        print_level(level);
     }
+
+    return status;
 }
 
-static mcu_status_t run_irq(mcuco_t *mcu, const irq_system_t *irq)
+static mcu_status_t run_gpio_toggle(mcuco_t *mcu, const mcuco_args_t *mcuco_args)
+{
+    level_t level = LEVEL_LOW;
+
+    mcu_status_t status = mcuco_gpio_toggle(mcu, mcuco_args->port, mcuco_args->pin, &level);
+    if (status == STATUS_OK)
+    {
+        print_level(level);
+    }
+
+    return status;
+}
+
+/* The timer commands parse, but nothing calls mcuco_pwm_group_* for them yet. */
+static mcu_status_t run_not_wired(mcuco_t *mcu, const mcuco_args_t *mcuco_args)
 {
     (void)mcu;
-    (void)irq;
+    (void)mcuco_args;
 
     return STATUS_ERR_UNSUPPORTED;
 }
 
-static mcu_status_t run_timer(mcuco_t *mcu, const timer_system_t *timer)
+// clang-format off
+static const command_t commands[] = {
+    {"mcu",   "probe",   0, {WORD_NONE},                            run_probe,       "",                            "check the link"},
+    {"mcu",   "reset",   0, {WORD_NONE},                            run_reset,       "",                            "reboot the MCU"},
+
+    {"gpio",  "cfg",     3, {WORD_DIRECTION, WORD_PORT, WORD_PIN},  run_gpio_cfg,    "<input|output> <port> <pin>", "set a pin's direction"},
+    {"gpio",  "set",     3, {WORD_LEVEL, WORD_PORT, WORD_PIN},      run_gpio_set,    "<low|high> <port> <pin>",     "drive an output pin"},
+    {"gpio",  "get",     2, {WORD_PORT, WORD_PIN},                  run_gpio_get,    "<port> <pin>",                "-> low | high"},
+    {"gpio",  "toggle",  2, {WORD_PORT, WORD_PIN},                  run_gpio_toggle, "<port> <pin>",                "-> the level after the flip"},
+
+    {"timer", "cfg",     2, {WORD_FREQUENCY, WORD_TIMER},           run_not_wired,   "<1-1000000> <0-2>",           "Hz, then which timer"},
+    {"timer", "get",     1, {WORD_TIMER},                           run_not_wired,   "<0-2>",                       "-> achieved Hz"},
+    {"timer", "release", 1, {WORD_TIMER},                           run_not_wired,   "<0-2>",                       "stop it, freezing its pins"},
+
+    {"pwm",   "cfg",     3, {WORD_POLARITY, WORD_PORT, WORD_PIN},   run_not_wired,   "<polarity> <port> <pin>",     "claim a pin, silent at 0%"},
+    {"pwm",   "set",     3, {WORD_DUTY, WORD_PORT, WORD_PIN},       run_not_wired,   "<0-100> <port> <pin>",        "percent, then the pin"},
+    {"pwm",   "get",     2, {WORD_PORT, WORD_PIN},                  run_not_wired,   "<port> <pin>",                "-> percent, one decimal"},
+    {"pwm",   "release", 2, {WORD_PORT, WORD_PIN},                  run_not_wired,   "<port> <pin>",                "free one pin"},
+};
+// clang-format on
+
+#define COMMAND_COUNT (sizeof(commands) / sizeof(commands[0]))
+
+const command_t *mcuco_find_command(const char *subsystem, const char *verb)
 {
-    (void)mcu;
-    (void)timer;
+    for (size_t row = 0; row < COMMAND_COUNT; row++)
+    {
+        if (strcmp(commands[row].subsystem, subsystem) == 0 && strcmp(commands[row].verb, verb) == 0)
+        {
+            return &commands[row];
+        }
+    }
 
-    return STATUS_ERR_UNSUPPORTED;
-}
-
-static mcu_status_t run_pwm(mcuco_t *mcu, const pwm_system_t *pwm)
-{
-    (void)mcu;
-    (void)pwm;
-
-    return STATUS_ERR_UNSUPPORTED;
+    return NULL;
 }
 
 mcu_status_t mcuco_run_command(mcuco_t *mcu, const mcuco_args_t *mcuco_args)
 {
-    switch (mcuco_args->subsytem)
+    if (mcuco_args->command == NULL)
     {
-    case MCU:
-        return run_mcu(mcu, &mcuco_args->system.mcu);
-
-    case GPIO:
-        return run_gpio(mcu, &mcuco_args->system.gpio);
-
-    case IRQ:
-        return run_irq(mcu, &mcuco_args->system.irq);
-
-    case TIMER:
-        return run_timer(mcu, &mcuco_args->system.timer);
-
-    case PWM:
-        return run_pwm(mcu, &mcuco_args->system.pwm);
-
-    default:
         return STATUS_ERR_ARG;
+    }
+
+    return mcuco_args->command->run(mcu, mcuco_args);
+}
+
+void mcuco_print_commands(FILE *stream)
+{
+    for (size_t row = 0; row < COMMAND_COUNT; row++)
+    {
+        bool starts_subsystem = (row == 0) || (strcmp(commands[row].subsystem, commands[row - 1].subsystem) != 0);
+
+        if (starts_subsystem && row > 0)
+        {
+            fprintf(stream, "\n");
+        }
+
+        fprintf(stream, "  %-6s %-8s %-28s %s\n", starts_subsystem ? commands[row].subsystem : "", commands[row].verb,
+                commands[row].usage, commands[row].summary);
     }
 }

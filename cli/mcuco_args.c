@@ -3,82 +3,16 @@
 #include <stdint.h>
 #include <stdlib.h>
 #include <string.h>
+
 #include "mcuco_args.h"
+#include "mcuco_command.h"
 
-// clang-format off
-static const char *const subsystem_list[NUM_OF_SUBSYSTEMS] = {
-    [MCU]   = "mcu",
-    [GPIO]  = "gpio",
-    [IRQ]   = "irq",
-    [TIMER] = "timer",
-    [PWM]   = "pwm",
-};
-// clang-format on
-
-// clang-format off
-static const char *const verb_list[NUM_OF_VERBS] = {
-    [CONFIG]  = "cfg",
-    [SET]     = "set",
-    [GET]     = "get",
-    [TOGGLE]  = "toggle",
-    [BIND]    = "bind",
-    [UNBIND]  = "unbind",
-    [RELEASE] = "release",
-    [PROBE] = "probe",
-    [RESET] = "reset"
-};
-// clang-format on
-
+/* The subsystem and verb name the command; its values follow in row order. */
 enum
 {
     SUBSYSTEM_WORD = 0,
-    SUBSYSTEM_WORD_COUNT,
-};
-
-/* Word positions once the subsystem word is stripped: the verb, then its values in order. */
-enum
-{
-    VERB_WORD = 0,
-};
-
-enum
-{
-    MCU_PROBE_WORD_COUNT = VERB_WORD + 1,
-};
-
-enum
-{
-    MCU_RESET_WORD_COUNT = VERB_WORD + 1,
-};
-
-enum
-{
-    GPIO_CFG_DIRECTION_WORD = VERB_WORD + 1,
-    GPIO_CFG_PORT_WORD,
-    GPIO_CFG_PIN_WORD,
-    GPIO_CFG_WORD_COUNT,
-};
-
-enum
-{
-    GPIO_SET_LEVEL_WORD = VERB_WORD + 1,
-    GPIO_SET_PORT_WORD,
-    GPIO_SET_PIN_WORD,
-    GPIO_SET_WORD_COUNT,
-};
-
-enum
-{
-    GPIO_GET_PORT_WORD = VERB_WORD + 1,
-    GPIO_GET_PIN_WORD,
-    GPIO_GET_WORD_COUNT,
-};
-
-enum
-{
-    GPIO_TOGGLE_PORT_WORD = VERB_WORD + 1,
-    GPIO_TOGGLE_PIN_WORD,
-    GPIO_TOGGLE_WORD_COUNT,
+    VERB_WORD,
+    FIRST_VALUE_WORD,
 };
 
 static int parse_direction(const char *word, dir_t *direction)
@@ -145,187 +79,139 @@ static int parse_pin(const char *word, uint8_t *pin)
     return 0;
 }
 
-static int assign_mcu_system(mcu_system_t *mcu, int word_count, char **words)
+static int parse_timer(const char *word, uint8_t *timer)
 {
-    if (word_count <= VERB_WORD)
+    if (word[0] < '0' || word[0] > '9')
     {
         return -1;
     }
 
-    if (strcmp(words[VERB_WORD], verb_list[PROBE]) == 0)
+    char *end           = NULL;
+    unsigned long value = strtoul(word, &end, 10);
+    if (*end != '\0' || value > GROUP_MAX)
     {
-        if (word_count != MCU_PROBE_WORD_COUNT)
-        {
-            return -1;
-        }
+        return -1;
+    }
 
-        mcu->verb = PROBE;
+    *timer = (uint8_t)value;
+    return 0;
+}
+
+static int parse_frequency(const char *word, uint32_t *frequency_hz)
+{
+    char *end           = NULL;
+    unsigned long value = strtoul(word, &end, 10);
+    if (*end != '\0' || value < FREQ_MIN || value > FREQ_MAX)
+    {
+        return -1;
+    }
+
+    *frequency_hz = (uint32_t)value;
+    return 0;
+}
+
+static int parse_polarity(const char *word, polarity_t *polarity)
+{
+    if (strcmp(word, "active-high") == 0)
+    {
+        *polarity = POL_ACTIVE_HIGH;
         return 0;
     }
 
-    if (strcmp(words[VERB_WORD], verb_list[RESET]) == 0)
+    if (strcmp(word, "active-low") == 0)
     {
-        if (word_count != MCU_RESET_WORD_COUNT)
-        {
-            return -1;
-        }
-
-        mcu->verb = RESET;
+        *polarity = POL_ACTIVE_LOW;
         return 0;
     }
 
     return -1;
 }
 
-static int assign_gpio_system(gpio_system_t *gpio, int word_count, char **words)
+static int parse_duty(const char *word, uint16_t *duty_tenths)
 {
-    if (word_count <= VERB_WORD)
+    if (word[0] < '0' || word[0] > '9')
     {
         return -1;
     }
 
-    if (strcmp(words[VERB_WORD], verb_list[CONFIG]) == 0)
+    char *end             = NULL;
+    unsigned long percent = strtoul(word, &end, 10);
+    if (*end != '\0' || percent > DUTY_MAX / 10U)
     {
-        if (word_count != GPIO_CFG_WORD_COUNT)
-        {
-            return -1;
-        }
-
-        if (parse_direction(words[GPIO_CFG_DIRECTION_WORD], &gpio->direction) != 0)
-        {
-            return -1;
-        }
-
-        if (parse_port(words[GPIO_CFG_PORT_WORD], &gpio->port) != 0)
-        {
-            return -1;
-        }
-
-        if (parse_pin(words[GPIO_CFG_PIN_WORD], &gpio->pin) != 0)
-        {
-            return -1;
-        }
-
-        gpio->verb = CONFIG;
-        return 0;
+        return -1;
     }
 
-    if (strcmp(words[VERB_WORD], verb_list[SET]) == 0)
+    *duty_tenths = (uint16_t)(percent * 10U);
+    return 0;
+}
+
+static int parse_value(word_kind_t kind, const char *word, mcuco_args_t *mcuco_args)
+{
+    switch (kind)
     {
-        if (word_count != GPIO_SET_WORD_COUNT)
-        {
-            return -1;
-        }
+    case WORD_DIRECTION:
+        return parse_direction(word, &mcuco_args->direction);
 
-        if (parse_level(words[GPIO_SET_LEVEL_WORD], &gpio->level) != 0)
-        {
-            return -1;
-        }
+    case WORD_LEVEL:
+        return parse_level(word, &mcuco_args->level);
 
-        if (parse_port(words[GPIO_SET_PORT_WORD], &gpio->port) != 0)
-        {
-            return -1;
-        }
+    case WORD_PORT:
+        return parse_port(word, &mcuco_args->port);
 
-        if (parse_pin(words[GPIO_SET_PIN_WORD], &gpio->pin) != 0)
-        {
-            return -1;
-        }
+    case WORD_PIN:
+        return parse_pin(word, &mcuco_args->pin);
 
-        gpio->verb = SET;
-        return 0;
-    }
+    case WORD_FREQUENCY:
+        return parse_frequency(word, &mcuco_args->frequency_hz);
 
-    if (strcmp(words[VERB_WORD], verb_list[GET]) == 0)
-    {
-        if (word_count != GPIO_GET_WORD_COUNT)
-        {
-            return -1;
-        }
+    case WORD_TIMER:
+        return parse_timer(word, &mcuco_args->timer);
 
-        if (parse_port(words[GPIO_GET_PORT_WORD], &gpio->port) != 0)
-        {
-            return -1;
-        }
+    case WORD_POLARITY:
+        return parse_polarity(word, &mcuco_args->polarity);
 
-        if (parse_pin(words[GPIO_GET_PIN_WORD], &gpio->pin) != 0)
-        {
-            return -1;
-        }
+    case WORD_DUTY:
+        return parse_duty(word, &mcuco_args->duty_tenths);
 
-        gpio->verb = GET;
-        return 0;
-    }
-
-    if (strcmp(words[VERB_WORD], verb_list[TOGGLE]) == 0)
-    {
-        if (word_count != GPIO_TOGGLE_WORD_COUNT)
-        {
-            return -1;
-        }
-
-        if (parse_port(words[GPIO_TOGGLE_PORT_WORD], &gpio->port) != 0)
-        {
-            return -1;
-        }
-
-        if (parse_pin(words[GPIO_TOGGLE_PIN_WORD], &gpio->pin) != 0)
-        {
-            return -1;
-        }
-
-        gpio->verb = TOGGLE;
-        return 0;
+    case WORD_NONE:
+        break;
     }
 
     return -1;
-}
-
-static int assign_subsystem(mcuco_args_t *mcuco_args, int word_count, char **words)
-{
-    switch (mcuco_args->subsytem)
-    {
-    case MCU:
-        return assign_mcu_system(&mcuco_args->system.mcu, word_count, words);
-
-    case GPIO:
-        return assign_gpio_system(&mcuco_args->system.gpio, word_count, words);
-
-    case IRQ:
-    case TIMER:
-    case PWM:
-    default:
-        return -1;
-    }
 }
 
 int args_parse_mcuco(int word_count, char **words, mcuco_args_t *mcuco_args)
 {
-    if (word_count <= SUBSYSTEM_WORD)
+    if (word_count <= 0)
     {
         return -EINVAL;
     }
 
-    size_t subsystem_count = sizeof(subsystem_list) / sizeof(subsystem_list[0]);
-
-    mcuco_args->subsytem = NUM_OF_SUBSYSTEMS;
-
-    for (size_t subsystem_index = 0; subsystem_index < subsystem_count; subsystem_index++)
+    if (word_count < FIRST_VALUE_WORD)
     {
-        if (strcmp(words[SUBSYSTEM_WORD], subsystem_list[subsystem_index]) == 0)
+        return -1;
+    }
+
+    const command_t *command = mcuco_find_command(words[SUBSYSTEM_WORD], words[VERB_WORD]);
+    if (command == NULL)
+    {
+        return -1;
+    }
+
+    mcuco_args->command = command;
+
+    if (word_count != FIRST_VALUE_WORD + command->value_count)
+    {
+        return -1;
+    }
+
+    for (int value_index = 0; value_index < command->value_count; value_index++)
+    {
+        if (parse_value(command->values[value_index], words[FIRST_VALUE_WORD + value_index], mcuco_args) != 0)
         {
-            mcuco_args->subsytem = (subsytem_t)subsystem_index;
+            return -1;
         }
     }
 
-    if (mcuco_args->subsytem == NUM_OF_SUBSYSTEMS)
-    {
-        return -1;
-    }
-
-    if (assign_subsystem(mcuco_args, word_count - SUBSYSTEM_WORD_COUNT, &words[SUBSYSTEM_WORD_COUNT]) != 0)
-    {
-        return -1;
-    }
     return 0;
 }

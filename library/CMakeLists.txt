@@ -60,9 +60,7 @@ if(NOT CMAKE_CROSSCOMPILING)
     tests/test_command_transport.cpp
     tests/test_mcuco.cpp
   )
-  # cli_common is defined in cli/, added after this directory; CMake resolves the
-  # target at generate time, so the ordering does not matter.
-  target_link_libraries(unit_tests PRIVATE mcuco cli_common CppUTest util) # util: openpty
+  target_link_libraries(unit_tests PRIVATE mcuco CppUTest util) # util: openpty
 
   add_test(NAME unit_tests COMMAND unit_tests -v)
 endif()

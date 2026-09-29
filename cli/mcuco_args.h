@@ -5,84 +5,59 @@
 
 #include "mcuco.h"
 
+/* What a command's value words are, in the order they are typed. WORD_NONE
+ * fills the slots a row does not use. */
 typedef enum
 {
-    MCU = 0,
-    GPIO,
-    IRQ,
-    TIMER,
-    PWM,
-    NUM_OF_SUBSYSTEMS
-} subsytem_t;
+    WORD_NONE = 0,
+    WORD_DIRECTION,
+    WORD_LEVEL,
+    WORD_PORT,
+    WORD_PIN,
+    WORD_FREQUENCY,
+    WORD_TIMER,
+    WORD_POLARITY,
+    WORD_DUTY,
+} word_kind_t;
 
-typedef enum
-{
-    CONFIG = 0,
-    SET,
-    GET,
-    TOGGLE,
-    BIND,
-    UNBIND,
-    RELEASE,
-    PROBE,
-    RESET,
-    NUM_OF_VERBS
-} verb_t;
+/* irq bind, the longest command, will take six. */
+#define MAX_VALUE_WORDS 6
 
+typedef struct mcuco_args mcuco_args_t;
+
+/* One row per command. The table in mcuco_command.c is the only description of
+ * the command line: parsing, dispatch and --help all read it, so none of them
+ * can offer a command the others do not know. */
 typedef struct
 {
-    verb_t verb;
-} mcu_system_t;
+    const char *subsystem;
+    const char *verb;
+    int value_count;
+    word_kind_t values[MAX_VALUE_WORDS];
+    mcu_status_t (*run)(mcuco_t *mcu, const mcuco_args_t *mcuco_args);
+    const char *usage;
+    const char *summary;
+} command_t;
 
-typedef struct
+/* Only the fields named by the matched command's values are meaningful. */
+struct mcuco_args
 {
-    verb_t verb;
+    const command_t *command;
     dir_t direction;
     level_t level;
     port_t port;
     uint8_t pin;
-} gpio_system_t;
-
-typedef struct
-{
-    verb_t verb;
-    edge_t edge;
-    port_t port;
-    uint8_t pin;
-    action_t action;
-    port_t out_port;
-    uint8_t out_pin;
-} irq_system_t;
-
-typedef struct
-{
-    verb_t verb;
     uint32_t frequency_hz;
     uint8_t timer;
-} timer_system_t;
-
-typedef struct
-{
-    verb_t verb;
     polarity_t polarity;
     uint16_t duty_tenths;
-    port_t port;
-    uint8_t pin;
-} pwm_system_t;
+};
 
-typedef struct
-{
-    subsytem_t subsytem;
-    union
-    {
-        gpio_system_t gpio;
-        irq_system_t irq;
-        timer_system_t timer;
-        pwm_system_t pwm;
-        mcu_system_t mcu;
-    } system;
-} mcuco_args_t;
-
+/* Parses the words left after the program name and its options. Returns 0,
+ * -EINVAL when there are no words at all, or -1 for anything else wrong.
+ * `command` is set as soon as the subsystem and verb match, so it can be
+ * non-NULL on a failure; the other fields are written only as each value
+ * parses. */
 int args_parse_mcuco(int word_count, char **words, mcuco_args_t *mcuco_args);
 
 #endif /* MCUCO_ARGS_H */
