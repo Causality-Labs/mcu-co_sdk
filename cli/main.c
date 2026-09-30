@@ -19,29 +19,29 @@ typedef struct
     bool help;
 } config_t;
 
-static void print_help(void)
+static void print_help(FILE *stream)
 {
-    fprintf(stdout, "usage: mcu-co-cli <subsystem> <verb> <values...> [--options anywhere]\n");
-    fprintf(stdout, "\n");
-    mcuco_print_commands(stdout);
-    fprintf(stdout, "\n");
-    fprintf(stdout, "  a pin is two words, port then number: A 5 - ports A-G in capitals, 0-15\n");
-    fprintf(stdout, "  edge is off, rising, falling or both - bind takes all but off\n");
-    fprintf(stdout, "  action is low, high or toggle\n");
-    fprintf(stdout, "  polarity is active-high or active-low\n");
-    fprintf(stdout, "\n");
-    fprintf(stdout, "pwm pins, by timer (from firmware peripherals/timer.c):\n");
-    fprintf(stdout, "  timer 0   TIM2    A5     A1     B10    B11\n");
-    fprintf(stdout, "  timer 1   TIM3    C6     C7     C8     C9\n");
-    fprintf(stdout, "  timer 2   TIM4    B6     B7     B8     B9\n");
-    fprintf(stdout, "\n");
-    fprintf(stdout, "  Reference only. The MCU resolves which channel a pin is and refuses a pin\n");
-    fprintf(stdout, "  with none; no command takes a timer for a pwm operation.\n");
-    fprintf(stdout, "\n");
-    fprintf(stdout, "options, valid on every command and in any position:\n");
-    fprintf(stdout, "  -d, --device <path>    serial port    [default: /dev/ttyACM0]\n");
-    fprintf(stdout, "  -t, --timeout <ms>     deadline       [1000, %lu-%lu]\n", TIMEOUT_MIN_MS, TIMEOUT_MAX_MS);
-    fprintf(stdout, "  -h, --help\n");
+    fprintf(stream, "usage: mcu-co-cli <subsystem> <verb> <values...> [--options anywhere]\n");
+    fprintf(stream, "\n");
+    mcuco_print_commands(stream);
+    fprintf(stream, "\n");
+    fprintf(stream, "  a pin is two words, port then number: A 5 - ports A-G in capitals, 0-15\n");
+    fprintf(stream, "  edge is off, rising, falling or both - bind takes all but off\n");
+    fprintf(stream, "  action is low, high or toggle\n");
+    fprintf(stream, "  polarity is active-high or active-low\n");
+    fprintf(stream, "\n");
+    fprintf(stream, "pwm pins, by timer (from firmware peripherals/timer.c):\n");
+    fprintf(stream, "  timer 0   TIM2    A5     A1     B10    B11\n");
+    fprintf(stream, "  timer 1   TIM3    C6     C7     C8     C9\n");
+    fprintf(stream, "  timer 2   TIM4    B6     B7     B8     B9\n");
+    fprintf(stream, "\n");
+    fprintf(stream, "  Reference only. The MCU resolves which channel a pin is and refuses a pin\n");
+    fprintf(stream, "  with none; no command takes a timer for a pwm operation.\n");
+    fprintf(stream, "\n");
+    fprintf(stream, "options, valid on every command and in any position:\n");
+    fprintf(stream, "  -d, --device <path>    serial port    [default: /dev/ttyACM0]\n");
+    fprintf(stream, "  -t, --timeout <ms>     deadline       [1000, %lu-%lu]\n", TIMEOUT_MIN_MS, TIMEOUT_MAX_MS);
+    fprintf(stream, "  -h, --help\n");
 }
 
 static int parse_timeout(const char *word, uint16_t *timeout_ms)
@@ -127,7 +127,7 @@ int main(int argc, char **argv)
 
     if (config.help == true)
     {
-        print_help();
+        print_help(stdout);
         return 0;
     }
 
@@ -135,7 +135,7 @@ int main(int argc, char **argv)
     if (args_parse_mcuco(argc - word_index, &argv[word_index], &mcuco_args) != 0)
     {
         fprintf(stderr, "mcu-co-cli: bad command\n");
-        print_help();
+        print_help(stderr);
         return 1;
     }
 
