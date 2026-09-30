@@ -9,6 +9,9 @@
 #include "mcuco_command.h"
 #include "mcuco.h"
 
+#define TIMEOUT_MIN_MS 20UL
+#define TIMEOUT_MAX_MS 10000UL
+
 typedef struct
 {
     char *device_path;
@@ -37,7 +40,7 @@ static void print_help(void)
     fprintf(stdout, "\n");
     fprintf(stdout, "options, valid on every command and in any position:\n");
     fprintf(stdout, "  -d, --device <path>    serial port    [default: /dev/ttyACM0]\n");
-    fprintf(stdout, "  -t, --timeout <ms>     deadline       [1000]\n");
+    fprintf(stdout, "  -t, --timeout <ms>     deadline       [1000, %lu-%lu]\n", TIMEOUT_MIN_MS, TIMEOUT_MAX_MS);
     fprintf(stdout, "  -h, --help\n");
 }
 
@@ -47,7 +50,7 @@ static int parse_timeout(const char *word, uint16_t *timeout_ms)
     char *end           = NULL;
     unsigned long value = strtoul(word, &end, 10);
 
-    if (errno != 0 || end == word || *end != '\0' || value < 1UL || value > UINT16_MAX)
+    if (errno != 0 || end == word || *end != '\0' || value < TIMEOUT_MIN_MS || value > TIMEOUT_MAX_MS)
     {
         return -1;
     }
@@ -93,7 +96,7 @@ static int parse_config(int argc, char **argv, config_t *config)
         case 't':
             if (parse_timeout(optarg, &config->timeout) != 0)
             {
-                fprintf(stderr, "mcu-co-cli: bad timeout '%s' (1-%u ms)\n", optarg, (unsigned)UINT16_MAX);
+                fprintf(stderr, "mcu-co-cli: bad timeout '%s' (%lu-%lu ms)\n", optarg, TIMEOUT_MIN_MS, TIMEOUT_MAX_MS);
                 return -1;
             }
             break;
