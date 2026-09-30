@@ -14,7 +14,6 @@ typedef struct
     char *device_path;
     uint16_t timeout;
     bool help;
-    bool version;
 } config_t;
 
 static void print_help(void)
@@ -37,10 +36,9 @@ static void print_help(void)
     fprintf(stdout, "  with none; no command takes a timer for a pwm operation.\n");
     fprintf(stdout, "\n");
     fprintf(stdout, "options, valid on every command and in any position:\n");
-    fprintf(stdout, "  -d, --device <path>    serial port    [$MCUCO_DEVICE, then /dev/ttyACM0]\n");
+    fprintf(stdout, "  -d, --device <path>    serial port    [default: /dev/ttyACM0]\n");
     fprintf(stdout, "  -t, --timeout <ms>     deadline       [1000]\n");
     fprintf(stdout, "  -h, --help\n");
-    fprintf(stdout, "  -V, --version\n");
 }
 
 static int parse_timeout(const char *word, uint16_t *timeout_ms)
@@ -104,10 +102,6 @@ static int parse_config(int argc, char **argv, config_t *config)
             config->help = true;
             break;
 
-        case 'V':
-            config->version = true;
-            break;
-
         default:
             return -1;
         }
@@ -131,12 +125,6 @@ int main(int argc, char **argv)
     if (config.help == true)
     {
         print_help();
-        return 0;
-    }
-
-    if (config.version == true)
-    {
-        // print_version();
         return 0;
     }
 
