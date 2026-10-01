@@ -1,7 +1,8 @@
-#ifndef MCUCO_ARGS_H
-#define MCUCO_ARGS_H
+#ifndef COMMANDS_H
+#define COMMANDS_H
 
 #include <stdint.h>
+#include <stdio.h>
 
 #include "mcuco.h"
 
@@ -25,14 +26,10 @@ typedef enum
     WORD_OUT_PIN,
 } word_kind_t;
 
-/* irq bind, the longest command, will take six. */
 #define MAX_VALUE_WORDS 6
 
 typedef struct mcuco_args mcuco_args_t;
 
-/* One row per command. The table in mcuco_command.c is the only description of
- * the command line: parsing, dispatch and --help all read it, so none of them
- * can offer a command the others do not know. */
 typedef struct
 {
     const char *subsystem;
@@ -44,7 +41,6 @@ typedef struct
     const char *summary;
 } command_t;
 
-/* Only the fields named by the matched command's values are meaningful. */
 struct mcuco_args
 {
     const command_t *command;
@@ -62,11 +58,9 @@ struct mcuco_args
     uint8_t out_pin;
 };
 
-/* Parses the words left after the program name and its options. Returns 0,
- * -EINVAL when there are no words at all, or -1 for anything else wrong.
- * `command` is set as soon as the subsystem and verb match, so it can be
- * non-NULL on a failure; the other fields are written only as each value
- * parses. */
 int args_parse_mcuco(int word_count, char **words, mcuco_args_t *mcuco_args);
+const command_t *mcuco_find_command(const char *subsystem, const char *verb);
+mcu_status_t mcuco_run_command(mcuco_t *mcu, const mcuco_args_t *mcuco_args);
+void mcuco_print_commands(FILE *stream);
 
-#endif /* MCUCO_ARGS_H */
+#endif /* COMMANDS_H */

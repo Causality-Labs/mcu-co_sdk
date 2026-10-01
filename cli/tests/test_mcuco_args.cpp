@@ -5,7 +5,7 @@
 #include <string.h>
 
 extern "C" {
-#include "mcuco_args.h"
+#include "commands.h"
 }
 
 /* args_parse_mcuco wants a mutable word vector, so the words are copied into

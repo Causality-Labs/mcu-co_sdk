@@ -14,8 +14,7 @@ set(CLI_COMPILE_OPTIONS
 
 # The parser is its own target so a test can link it without pulling in main().
 add_library(cli_common OBJECT
-  mcuco_args.c
-  mcuco_command.c
+  commands.c
 )
 
 target_include_directories(cli_common PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
@@ -45,8 +44,7 @@ if(NOT CMAKE_CROSSCOMPILING)
     tests/test_mcuco_spy.cpp
     tests/test_mcuco_args.cpp
     tests/test_mcuco_command.cpp
-    mcuco_args.c
-    mcuco_command.c
+    commands.c
   )
 
   target_include_directories(cli_tests PRIVATE

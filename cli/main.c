@@ -5,8 +5,7 @@
 #include <stdbool.h>
 #include <stdint.h>
 #include <string.h>
-#include "mcuco_args.h"
-#include "mcuco_command.h"
+#include "commands.h"
 #include "mcuco.h"
 
 #define TIMEOUT_MIN_MS 20UL
@@ -132,10 +131,11 @@ int main(int argc, char **argv)
     }
 
     mcuco_args_t mcuco_args = {0};
-    if (args_parse_mcuco(argc - word_index, &argv[word_index], &mcuco_args) != 0)
+    int word_count  = argc - word_index;
+    if (args_parse_mcuco(word_count, &argv[word_index], &mcuco_args) != 0)
     {
         fprintf(stderr, "mcu-co-cli: bad command\n");
-        print_help(stderr);
+        fprintf(stderr, "try 'mcu-co-cli --help'\n");
         return 1;
     }
 
@@ -147,14 +147,9 @@ int main(int argc, char **argv)
     }
 
     mcu_status_t status = mcuco_run_command(mcu, &mcuco_args);
+    fprintf(stderr, "%s\n", mcuco_strerror(status));
 
     mcuco_close(mcu);
 
-    if (status != STATUS_OK)
-    {
-        fprintf(stderr, "%s\n", mcuco_strerror(status));
-        return 1;
-    }
-
-    return 0;
+    return (status == STATUS_OK) ? 0 : 1;
 }

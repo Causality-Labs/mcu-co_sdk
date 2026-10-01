@@ -5,8 +5,7 @@
 #include <unistd.h>
 
 extern "C" {
-#include "mcuco_args.h"
-#include "mcuco_command.h"
+#include "commands.h"
 #include "mcuco_spy.h"
 }
 
