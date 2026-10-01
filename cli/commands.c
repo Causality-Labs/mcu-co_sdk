@@ -291,7 +291,7 @@ static mcu_status_t run_gpio_get(mcuco_t *mcu, const mcuco_args_t *mcuco_args)
     level_t level = LEVEL_LOW;
 
     mcu_status_t status = mcuco_gpio_get(mcu, mcuco_args->port, mcuco_args->pin, &level);
-    if (status == STATUS_OK)
+    if (status == MCUCO_STATUS_OK)
     {
         print_level(level);
     }
@@ -304,7 +304,7 @@ static mcu_status_t run_gpio_toggle(mcuco_t *mcu, const mcuco_args_t *mcuco_args
     level_t level = LEVEL_LOW;
 
     mcu_status_t status = mcuco_gpio_toggle(mcu, mcuco_args->port, mcuco_args->pin, &level);
-    if (status == STATUS_OK)
+    if (status == MCUCO_STATUS_OK)
     {
         print_level(level);
     }
@@ -327,7 +327,7 @@ static mcu_status_t run_timer_get(mcuco_t *mcu, const mcuco_args_t *mcuco_args)
     uint32_t achieved_hz = 0;
 
     mcu_status_t status = mcuco_pwm_group_get(mcu, mcuco_args->timer, &achieved_hz);
-    if (status == STATUS_OK)
+    if (status == MCUCO_STATUS_OK)
     {
         printf("%u\n", achieved_hz);
     }
@@ -355,7 +355,7 @@ static mcu_status_t run_pwm_get(mcuco_t *mcu, const mcuco_args_t *mcuco_args)
     uint16_t duty_tenths = 0;
 
     mcu_status_t status = mcuco_pwm_channel_get(mcu, mcuco_args->port, mcuco_args->pin, &duty_tenths);
-    if (status == STATUS_OK)
+    if (status == MCUCO_STATUS_OK)
     {
         printf("%u.%u\n", duty_tenths / 10U, duty_tenths % 10U);
     }
@@ -454,7 +454,7 @@ mcu_status_t mcuco_run_command(mcuco_t *mcu, const command_t *command, const mcu
 {
     if (command == NULL)
     {
-        return STATUS_ERR_ARG;
+        return MCUCO_STATUS_ERR_ARG;
     }
 
     return command->run(mcu, mcuco_args);

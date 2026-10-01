@@ -152,5 +152,5 @@ int main(int argc, char **argv)
 
     mcuco_close(mcu);
 
-    return (status == STATUS_OK) ? 0 : 1;
+    return (status == MCUCO_STATUS_OK) ? 0 : 1;
 }

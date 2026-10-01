@@ -90,5 +90,5 @@ TEST(Commands, OutOfRangeValueLeavesTheCommandUnset)
 
 TEST(Commands, RunWithoutACommandReturnsArgErrorWithoutTouchingTheLink)
 {
-    LONGS_EQUAL(STATUS_ERR_ARG, mcuco_run_command(NULL, NULL, &mcuco_args));
+    LONGS_EQUAL(MCUCO_STATUS_ERR_ARG, mcuco_run_command(NULL, NULL, &mcuco_args));
 }

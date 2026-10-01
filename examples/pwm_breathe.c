@@ -59,12 +59,12 @@ static mcu_status_t claim_group(mcuco_t *mcu)
 {
     mcu_status_t status = mcuco_pwm_group_cfg(mcu, PWM_HZ, LED_GROUP);
 
-    if (status == STATUS_ERR_BUSY)
+    if (status == MCUCO_STATUS_ERR_BUSY)
     {
         fprintf(stderr, "group %u was already running, taking it over\n", LED_GROUP);
 
         status = mcuco_pwm_group_release(mcu, LED_GROUP);
-        if (status != STATUS_OK)
+        if (status != MCUCO_STATUS_OK)
         {
             return status;
         }
@@ -85,7 +85,7 @@ static mcu_status_t ramp(mcuco_t *mcu, int from, int to)
     while (!stop_requested)
     {
         mcu_status_t status = mcuco_pwm_channel_set(mcu, (uint16_t)duty, LED_PORT, LED_PIN);
-        if (status != STATUS_OK)
+        if (status != MCUCO_STATUS_OK)
         {
             return status;
         }
@@ -106,7 +106,7 @@ static mcu_status_t ramp(mcuco_t *mcu, int from, int to)
         wait_a_step();
     }
 
-    return STATUS_OK;
+    return MCUCO_STATUS_OK;
 }
 
 int main(int argc, char **argv)
@@ -125,7 +125,7 @@ int main(int argc, char **argv)
     }
 
     mcu_status_t status = claim_group(mcu);
-    if (status != STATUS_OK)
+    if (status != MCUCO_STATUS_OK)
     {
         fprintf(stderr, "pwm group cfg: %s\n", mcuco_strerror(status));
         mcuco_close(mcu);
@@ -134,7 +134,7 @@ int main(int argc, char **argv)
 
     /* Claiming the pin leaves it silent at 0.0% until the first set below. */
     status = mcuco_pwm_channel_cfg(mcu, POL_ACTIVE_HIGH, LED_PORT, LED_PIN);
-    if (status != STATUS_OK)
+    if (status != MCUCO_STATUS_OK)
     {
         fprintf(stderr, "pwm channel cfg: %s\n", mcuco_strerror(status));
         mcuco_close(mcu);
@@ -143,10 +143,10 @@ int main(int argc, char **argv)
 
     fprintf(stderr, "breathing LD2 at %u Hz. Ctrl-C to exit.\n", PWM_HZ);
 
-    while (!stop_requested && status == STATUS_OK)
+    while (!stop_requested && status == MCUCO_STATUS_OK)
     {
         status = ramp(mcu, 0, DUTY_MAX);
-        if (status != STATUS_OK)
+        if (status != MCUCO_STATUS_OK)
         {
             break;
         }
@@ -154,7 +154,7 @@ int main(int argc, char **argv)
         status = ramp(mcu, DUTY_MAX, 0);
     }
 
-    if (status != STATUS_OK)
+    if (status != MCUCO_STATUS_OK)
     {
         fprintf(stderr, "pwm channel set: %s\n", mcuco_strerror(status));
     }
@@ -162,12 +162,12 @@ int main(int argc, char **argv)
     /* The timer keeps driving the pin until the MCU is reset. Nothing works on
      * this handle afterwards, so closing is all that is left. */
     mcu_status_t reset_status = mcuco_reset(mcu);
-    if (reset_status != STATUS_OK)
+    if (reset_status != MCUCO_STATUS_OK)
     {
         fprintf(stderr, "reset: %s\n", mcuco_strerror(reset_status));
     }
 
     mcuco_close(mcu);
 
-    return (status == STATUS_OK) ? 0 : 1;
+    return (status == MCUCO_STATUS_OK) ? 0 : 1;
 }

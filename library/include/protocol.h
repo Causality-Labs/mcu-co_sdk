@@ -59,7 +59,7 @@ ssize_t protocol_pwm_channel_get(port_t port, uint8_t pin, uint8_t *buffer, size
 ssize_t protocol_pwm_channel_release(port_t port, uint8_t pin, uint8_t *buffer, size_t buffer_len);
 
 /* Decodes one complete candidate frame. Verifies SOF, LEN and the CRC before
- * filling `response`; a frame that fails any of those is STATUS_ERR_BAD_FRAME.
+ * filling `response`; a frame that fails any of those is MCUCO_STATUS_ERR_BAD_FRAME.
  * Bytes past the frame are ignored. */
 mcu_status_t protocol_parse_response(const uint8_t *frame, size_t frame_len, protocol_response_t *response);
 

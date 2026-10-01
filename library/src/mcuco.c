@@ -21,12 +21,12 @@ static mcu_status_t status_from_response(const protocol_response_t *response)
 {
     if (response->ack)
     {
-        return STATUS_OK;
+        return MCUCO_STATUS_OK;
     }
 
     if (response->data_len != 1)
     {
-        return STATUS_ERR_BAD_FRAME;
+        return MCUCO_STATUS_ERR_BAD_FRAME;
     }
 
     return (mcu_status_t)response->data[0];
@@ -45,19 +45,19 @@ static mcu_status_t exchange(mcuco_t *mcu, const uint8_t *frame, ssize_t frame_l
     protocol_response_t decoded = {0};
 
     mcu_status_t status = transmit_command(mcu->fd, frame, (size_t)frame_len);
-    if (status != STATUS_OK)
+    if (status != MCUCO_STATUS_OK)
     {
         return status;
     }
 
     status = receive_response(mcu->fd, mcu->timeout_ms, &decoded);
-    if (status != STATUS_OK)
+    if (status != MCUCO_STATUS_OK)
     {
         return status;
     }
 
     status = status_from_response(&decoded);
-    if (status != STATUS_OK)
+    if (status != MCUCO_STATUS_OK)
     {
         return status;
     }
@@ -67,7 +67,7 @@ static mcu_status_t exchange(mcuco_t *mcu, const uint8_t *frame, ssize_t frame_l
         *response = decoded;
     }
 
-    return STATUS_OK;
+    return MCUCO_STATUS_OK;
 }
 
 mcuco_t *mcuco_open(const char *device_path, int timeout_ms)
@@ -102,10 +102,10 @@ mcuco_t *mcuco_open(const char *device_path, int timeout_ms)
     /* Confirm mcu-co is actually on the other end rather than handing back a
      * handle to whatever device happened to own this path. */
     mcu_status_t status = mcuco_probe(mcu);
-    if (status != STATUS_OK)
+    if (status != MCUCO_STATUS_OK)
     {
         mcuco_close(mcu);
-        errno = (status == STATUS_ERR_NO_RESPONSE) ? ETIMEDOUT : EPROTO;
+        errno = (status == MCUCO_STATUS_ERR_NO_RESPONSE) ? ETIMEDOUT : EPROTO;
         return NULL;
     }
 
@@ -129,7 +129,7 @@ mcu_status_t mcuco_probe(mcuco_t *mcu)
 
     if (mcu == NULL)
     {
-        return STATUS_ERR_ARG;
+        return MCUCO_STATUS_ERR_ARG;
     }
 
     uint8_t frame[PROTOCOL_MAX_COMMAND_FRAME] = {0};
@@ -138,24 +138,24 @@ mcu_status_t mcuco_probe(mcuco_t *mcu)
     protocol_response_t response = {0};
 
     mcu_status_t status = exchange(mcu, frame, frame_len, &response);
-    if (status != STATUS_OK)
+    if (status != MCUCO_STATUS_OK)
     {
         return status;
     }
 
     if (response.data_len != PROBE_MAGIC_LEN || memcmp(response.data, expected_magic, PROBE_MAGIC_LEN) != 0)
     {
-        return STATUS_ERR_BAD_FRAME;
+        return MCUCO_STATUS_ERR_BAD_FRAME;
     }
 
-    return STATUS_OK;
+    return MCUCO_STATUS_OK;
 }
 
 mcu_status_t mcuco_reset(mcuco_t *mcu)
 {
     if (mcu == NULL)
     {
-        return STATUS_ERR_ARG;
+        return MCUCO_STATUS_ERR_ARG;
     }
 
     uint8_t frame[PROTOCOL_MAX_COMMAND_FRAME];
@@ -168,7 +168,7 @@ mcu_status_t mcuco_gpio_cfg(mcuco_t *mcu, dir_t dir, port_t port, uint8_t pin)
 {
     if (mcu == NULL)
     {
-        return STATUS_ERR_ARG;
+        return MCUCO_STATUS_ERR_ARG;
     }
 
     uint8_t frame[PROTOCOL_MAX_COMMAND_FRAME];
@@ -181,7 +181,7 @@ mcu_status_t mcuco_gpio_set(mcuco_t *mcu, level_t level, port_t port, uint8_t pi
 {
     if (mcu == NULL)
     {
-        return STATUS_ERR_ARG;
+        return MCUCO_STATUS_ERR_ARG;
     }
 
     uint8_t frame[PROTOCOL_MAX_COMMAND_FRAME];
@@ -194,7 +194,7 @@ mcu_status_t mcuco_gpio_toggle(mcuco_t *mcu, port_t port, uint8_t pin, level_t *
 {
     if (mcu == NULL || level == NULL)
     {
-        return STATUS_ERR_ARG;
+        return MCUCO_STATUS_ERR_ARG;
     }
 
     uint8_t frame[PROTOCOL_MAX_COMMAND_FRAME];
@@ -203,26 +203,26 @@ mcu_status_t mcuco_gpio_toggle(mcuco_t *mcu, port_t port, uint8_t pin, level_t *
     protocol_response_t response = {0};
 
     mcu_status_t status = exchange(mcu, frame, frame_len, &response);
-    if (status != STATUS_OK)
+    if (status != MCUCO_STATUS_OK)
     {
         return status;
     }
 
     if (response.data_len != 1)
     {
-        return STATUS_ERR_BAD_FRAME;
+        return MCUCO_STATUS_ERR_BAD_FRAME;
     }
 
     *level = (response.data[0] != 0) ? LEVEL_HIGH : LEVEL_LOW;
 
-    return STATUS_OK;
+    return MCUCO_STATUS_OK;
 }
 
 mcu_status_t mcuco_gpio_get(mcuco_t *mcu, port_t port, uint8_t pin, level_t *level)
 {
     if (mcu == NULL || level == NULL)
     {
-        return STATUS_ERR_ARG;
+        return MCUCO_STATUS_ERR_ARG;
     }
 
     uint8_t frame[PROTOCOL_MAX_COMMAND_FRAME];
@@ -231,26 +231,26 @@ mcu_status_t mcuco_gpio_get(mcuco_t *mcu, port_t port, uint8_t pin, level_t *lev
     protocol_response_t response = {0};
 
     mcu_status_t status = exchange(mcu, frame, frame_len, &response);
-    if (status != STATUS_OK)
+    if (status != MCUCO_STATUS_OK)
     {
         return status;
     }
 
     if (response.data_len != 1)
     {
-        return STATUS_ERR_BAD_FRAME;
+        return MCUCO_STATUS_ERR_BAD_FRAME;
     }
 
     *level = (response.data[0] != 0) ? LEVEL_HIGH : LEVEL_LOW;
 
-    return STATUS_OK;
+    return MCUCO_STATUS_OK;
 }
 
 mcu_status_t mcuco_gpio_irq_cfg(mcuco_t *mcu, edge_t edge, port_t port, uint8_t pin)
 {
     if (mcu == NULL)
     {
-        return STATUS_ERR_ARG;
+        return MCUCO_STATUS_ERR_ARG;
     }
 
     uint8_t frame[PROTOCOL_MAX_COMMAND_FRAME];
@@ -264,7 +264,7 @@ mcu_status_t mcuco_gpio_irq_bind(mcuco_t *mcu, edge_t edge, port_t in_port, uint
 {
     if (mcu == NULL)
     {
-        return STATUS_ERR_ARG;
+        return MCUCO_STATUS_ERR_ARG;
     }
 
     uint8_t frame[PROTOCOL_MAX_COMMAND_FRAME];
@@ -277,7 +277,7 @@ mcu_status_t mcuco_gpio_irq_unbind(mcuco_t *mcu, port_t port, uint8_t pin)
 {
     if (mcu == NULL)
     {
-        return STATUS_ERR_ARG;
+        return MCUCO_STATUS_ERR_ARG;
     }
 
     uint8_t frame[PROTOCOL_MAX_COMMAND_FRAME];
@@ -290,7 +290,7 @@ mcu_status_t mcuco_pwm_group_cfg(mcuco_t *mcu, uint32_t freq_hz, uint8_t group)
 {
     if (mcu == NULL)
     {
-        return STATUS_ERR_ARG;
+        return MCUCO_STATUS_ERR_ARG;
     }
 
     uint8_t frame[PROTOCOL_MAX_COMMAND_FRAME];
@@ -303,7 +303,7 @@ mcu_status_t mcuco_pwm_group_get(mcuco_t *mcu, uint8_t group, uint32_t *achieved
 {
     if (mcu == NULL || achieved_hz == NULL)
     {
-        return STATUS_ERR_ARG;
+        return MCUCO_STATUS_ERR_ARG;
     }
 
     uint8_t frame[PROTOCOL_MAX_COMMAND_FRAME];
@@ -312,29 +312,29 @@ mcu_status_t mcuco_pwm_group_get(mcuco_t *mcu, uint8_t group, uint32_t *achieved
     protocol_response_t response = {0};
 
     mcu_status_t status = exchange(mcu, frame, frame_len, &response);
-    if (status != STATUS_OK)
+    if (status != MCUCO_STATUS_OK)
     {
         return status;
     }
 
     if (response.data_len != 4)
     {
-        return STATUS_ERR_BAD_FRAME;
+        return MCUCO_STATUS_ERR_BAD_FRAME;
     }
 
     if (get_u32_le(response.data, achieved_hz) < 0)
     {
-        return STATUS_ERR_ARG;
+        return MCUCO_STATUS_ERR_ARG;
     }
 
-    return STATUS_OK;
+    return MCUCO_STATUS_OK;
 }
 
 mcu_status_t mcuco_pwm_group_release(mcuco_t *mcu, uint8_t group)
 {
     if (mcu == NULL)
     {
-        return STATUS_ERR_ARG;
+        return MCUCO_STATUS_ERR_ARG;
     }
 
     uint8_t frame[PROTOCOL_MAX_COMMAND_FRAME];
@@ -347,7 +347,7 @@ mcu_status_t mcuco_pwm_channel_cfg(mcuco_t *mcu, polarity_t polarity, port_t por
 {
     if (mcu == NULL)
     {
-        return STATUS_ERR_ARG;
+        return MCUCO_STATUS_ERR_ARG;
     }
 
     uint8_t frame[PROTOCOL_MAX_COMMAND_FRAME];
@@ -360,7 +360,7 @@ mcu_status_t mcuco_pwm_channel_set(mcuco_t *mcu, uint16_t duty, port_t port, uin
 {
     if (mcu == NULL)
     {
-        return STATUS_ERR_ARG;
+        return MCUCO_STATUS_ERR_ARG;
     }
 
     uint8_t frame[PROTOCOL_MAX_COMMAND_FRAME];
@@ -373,7 +373,7 @@ mcu_status_t mcuco_pwm_channel_get(mcuco_t *mcu, port_t port, uint8_t pin, uint1
 {
     if (mcu == NULL || duty == NULL)
     {
-        return STATUS_ERR_ARG;
+        return MCUCO_STATUS_ERR_ARG;
     }
 
     uint8_t frame[PROTOCOL_MAX_COMMAND_FRAME];
@@ -382,29 +382,29 @@ mcu_status_t mcuco_pwm_channel_get(mcuco_t *mcu, port_t port, uint8_t pin, uint1
     protocol_response_t response = {0};
 
     mcu_status_t status = exchange(mcu, frame, frame_len, &response);
-    if (status != STATUS_OK)
+    if (status != MCUCO_STATUS_OK)
     {
         return status;
     }
 
     if (response.data_len != 2)
     {
-        return STATUS_ERR_BAD_FRAME;
+        return MCUCO_STATUS_ERR_BAD_FRAME;
     }
 
     if (get_u16_le(response.data, duty) < 0)
     {
-        return STATUS_ERR_ARG;
+        return MCUCO_STATUS_ERR_ARG;
     }
 
-    return STATUS_OK;
+    return MCUCO_STATUS_OK;
 }
 
 mcu_status_t mcuco_pwm_channel_release(mcuco_t *mcu, port_t port, uint8_t pin)
 {
     if (mcu == NULL)
     {
-        return STATUS_ERR_ARG;
+        return MCUCO_STATUS_ERR_ARG;
     }
 
     uint8_t frame[PROTOCOL_MAX_COMMAND_FRAME];

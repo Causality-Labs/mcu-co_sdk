@@ -23,7 +23,7 @@ TEST(Protocol, GpioCfgRejectsAnInvalidDirection)
 {
     uint8_t frame[PROTOCOL_MAX_COMMAND_FRAME] = {0};
 
-    LONGS_EQUAL(-STATUS_ERR_ARG,
+    LONGS_EQUAL(-MCUCO_STATUS_ERR_ARG,
                 protocol_gpio_cfg((dir_t)2, PORT_A, 5, frame, sizeof(frame)));
 }
 
@@ -31,7 +31,7 @@ TEST(Protocol, GpioCfgRejectsAPinAboveTheMaximum)
 {
     uint8_t frame[PROTOCOL_MAX_COMMAND_FRAME] = {0};
 
-    LONGS_EQUAL(-STATUS_ERR_ARG,
+    LONGS_EQUAL(-MCUCO_STATUS_ERR_ARG,
                 protocol_gpio_cfg(DIR_OUTPUT, PORT_A, PIN_MAX + 1, frame, sizeof(frame)));
 }
 
@@ -39,7 +39,7 @@ TEST(Protocol, GpioCfgRejectsABufferTooSmallForTheFrame)
 {
     uint8_t frame[7] = {0};
 
-    LONGS_EQUAL(-STATUS_ERR_ARG,
+    LONGS_EQUAL(-MCUCO_STATUS_ERR_ARG,
                 protocol_gpio_cfg(DIR_OUTPUT, PORT_A, 5, frame, sizeof(frame)));
 }
 
@@ -51,7 +51,7 @@ TEST(Protocol, ParsesABareAck)
     const uint8_t frame[] = {0xA5, 0x01, 0x01, 0x1F, 0x3E};
     protocol_response_t response = {};
 
-    LONGS_EQUAL(STATUS_OK, protocol_parse_response(frame, sizeof(frame), &response));
+    LONGS_EQUAL(MCUCO_STATUS_OK, protocol_parse_response(frame, sizeof(frame), &response));
     CHECK_TRUE(response.ack);
     LONGS_EQUAL(0, response.data_len);
 }
@@ -61,7 +61,7 @@ TEST(Protocol, ParsesAGpioReadValue)
     const uint8_t frame[] = {0xA5, 0x02, 0x01, 0x01, 0xEC, 0x81};
     protocol_response_t response = {};
 
-    LONGS_EQUAL(STATUS_OK, protocol_parse_response(frame, sizeof(frame), &response));
+    LONGS_EQUAL(MCUCO_STATUS_OK, protocol_parse_response(frame, sizeof(frame), &response));
     CHECK_TRUE(response.ack);
     LONGS_EQUAL(1, response.data_len);
     LONGS_EQUAL(0x01, response.data[0]);
@@ -72,7 +72,7 @@ TEST(Protocol, ParsesAPwmDutyValue)
     const uint8_t frame[] = {0xA5, 0x03, 0x01, 0xFA, 0x00, 0x26, 0xD4};
     protocol_response_t response = {};
 
-    LONGS_EQUAL(STATUS_OK, protocol_parse_response(frame, sizeof(frame), &response));
+    LONGS_EQUAL(MCUCO_STATUS_OK, protocol_parse_response(frame, sizeof(frame), &response));
     LONGS_EQUAL(2, response.data_len);
     LONGS_EQUAL(250, response.data[0] | (response.data[1] << 8));
 }
@@ -82,7 +82,7 @@ TEST(Protocol, ParsesAPwmGroupFrequency)
     const uint8_t frame[] = {0xA5, 0x05, 0x01, 0xE8, 0x03, 0x00, 0x00, 0x39, 0xBF};
     protocol_response_t response = {};
 
-    LONGS_EQUAL(STATUS_OK, protocol_parse_response(frame, sizeof(frame), &response));
+    LONGS_EQUAL(MCUCO_STATUS_OK, protocol_parse_response(frame, sizeof(frame), &response));
     LONGS_EQUAL(4, response.data_len);
 }
 
@@ -92,10 +92,10 @@ TEST(Protocol, ParsesANackAndItsReason)
     const uint8_t frame[] = {0xA5, 0x02, 0x00, 0x06, 0x3A, 0xC2};
     protocol_response_t response = {};
 
-    LONGS_EQUAL(STATUS_OK, protocol_parse_response(frame, sizeof(frame), &response));
+    LONGS_EQUAL(MCUCO_STATUS_OK, protocol_parse_response(frame, sizeof(frame), &response));
     CHECK_FALSE(response.ack);
     LONGS_EQUAL(1, response.data_len);
-    LONGS_EQUAL(STATUS_ERR_BUSY, response.data[0]);
+    LONGS_EQUAL(MCUCO_STATUS_ERR_BUSY, response.data[0]);
 }
 
 TEST(Protocol, RejectsAFrameWithTheWrongStartByte)
@@ -103,7 +103,7 @@ TEST(Protocol, RejectsAFrameWithTheWrongStartByte)
     const uint8_t frame[] = {0x5A, 0x01, 0x01, 0x1F, 0x3E};
     protocol_response_t response = {};
 
-    LONGS_EQUAL(STATUS_ERR_BAD_FRAME,
+    LONGS_EQUAL(MCUCO_STATUS_ERR_BAD_FRAME,
                 protocol_parse_response(frame, sizeof(frame), &response));
 }
 
@@ -114,7 +114,7 @@ TEST(Protocol, RejectsASingleBitCrcFlip)
 
     frame[2] ^= 0x01;
 
-    LONGS_EQUAL(STATUS_ERR_BAD_FRAME,
+    LONGS_EQUAL(MCUCO_STATUS_ERR_BAD_FRAME,
                 protocol_parse_response(frame, sizeof(frame), &response));
 }
 
@@ -124,7 +124,7 @@ TEST(Protocol, RejectsAZeroLength)
     const uint8_t frame[] = {0xA5, 0x00, 0x00, 0x00, 0x00};
     protocol_response_t response = {};
 
-    LONGS_EQUAL(STATUS_ERR_BAD_FRAME,
+    LONGS_EQUAL(MCUCO_STATUS_ERR_BAD_FRAME,
                 protocol_parse_response(frame, sizeof(frame), &response));
 }
 
@@ -133,7 +133,7 @@ TEST(Protocol, RejectsALengthAboveTheWidestResponse)
     const uint8_t frame[] = {0xA5, 0x06, 0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00};
     protocol_response_t response = {};
 
-    LONGS_EQUAL(STATUS_ERR_BAD_FRAME,
+    LONGS_EQUAL(MCUCO_STATUS_ERR_BAD_FRAME,
                 protocol_parse_response(frame, sizeof(frame), &response));
 }
 
@@ -142,7 +142,7 @@ TEST(Protocol, RejectsATruncatedFrame)
     const uint8_t frame[] = {0xA5, 0x05, 0x01, 0xE8};
     protocol_response_t response = {};
 
-    LONGS_EQUAL(STATUS_ERR_BAD_FRAME,
+    LONGS_EQUAL(MCUCO_STATUS_ERR_BAD_FRAME,
                 protocol_parse_response(frame, sizeof(frame), &response));
 }
 
@@ -163,7 +163,7 @@ TEST(Protocol, GpioSetRejectsAnInvalidLevel)
 {
     uint8_t frame[PROTOCOL_MAX_COMMAND_FRAME] = {0};
 
-    LONGS_EQUAL(-STATUS_ERR_ARG,
+    LONGS_EQUAL(-MCUCO_STATUS_ERR_ARG,
                 protocol_gpio_set((level_t)2, PORT_A, 5, frame, sizeof(frame)));
 }
 
@@ -171,7 +171,7 @@ TEST(Protocol, GpioSetRejectsAPortAboveTheMaximum)
 {
     uint8_t frame[PROTOCOL_MAX_COMMAND_FRAME] = {0};
 
-    LONGS_EQUAL(-STATUS_ERR_ARG,
+    LONGS_EQUAL(-MCUCO_STATUS_ERR_ARG,
                 protocol_gpio_set(LEVEL_HIGH, (port_t)(PORT_G + 1), 5, frame, sizeof(frame)));
 }
 
@@ -192,7 +192,7 @@ TEST(Protocol, GpioGetRejectsAPinAboveTheMaximum)
 {
     uint8_t frame[PROTOCOL_MAX_COMMAND_FRAME] = {0};
 
-    LONGS_EQUAL(-STATUS_ERR_ARG,
+    LONGS_EQUAL(-MCUCO_STATUS_ERR_ARG,
                 protocol_gpio_get(PORT_A, PIN_MAX + 1, frame, sizeof(frame)));
 }
 
@@ -215,14 +215,14 @@ TEST(Protocol, PwmGroupCfgRejectsAZeroFrequency)
 {
     uint8_t frame[PROTOCOL_MAX_COMMAND_FRAME] = {0};
 
-    LONGS_EQUAL(-STATUS_ERR_ARG, protocol_pwm_group_cfg(0, 0, frame, sizeof(frame)));
+    LONGS_EQUAL(-MCUCO_STATUS_ERR_ARG, protocol_pwm_group_cfg(0, 0, frame, sizeof(frame)));
 }
 
 TEST(Protocol, PwmGroupCfgRejectsAFrequencyAboveTheMaximum)
 {
     uint8_t frame[PROTOCOL_MAX_COMMAND_FRAME] = {0};
 
-    LONGS_EQUAL(-STATUS_ERR_ARG,
+    LONGS_EQUAL(-MCUCO_STATUS_ERR_ARG,
                 protocol_pwm_group_cfg(FREQ_MAX + 1, 0, frame, sizeof(frame)));
 }
 
@@ -230,7 +230,7 @@ TEST(Protocol, PwmGroupCfgRejectsAGroupAboveTheMaximum)
 {
     uint8_t frame[PROTOCOL_MAX_COMMAND_FRAME] = {0};
 
-    LONGS_EQUAL(-STATUS_ERR_ARG,
+    LONGS_EQUAL(-MCUCO_STATUS_ERR_ARG,
                 protocol_pwm_group_cfg(1000, GROUP_MAX + 1, frame, sizeof(frame)));
 }
 
@@ -265,7 +265,7 @@ TEST(Protocol, PwmGroupGetRejectsAGroupAboveTheMaximum)
 {
     uint8_t frame[PROTOCOL_MAX_COMMAND_FRAME] = {0};
 
-    LONGS_EQUAL(-STATUS_ERR_ARG,
+    LONGS_EQUAL(-MCUCO_STATUS_ERR_ARG,
                 protocol_pwm_group_get(GROUP_MAX + 1, frame, sizeof(frame)));
 }
 
@@ -297,7 +297,7 @@ TEST(Protocol, GpioIrqCfgRejectsAnEdgeOutsideTheEncoding)
 {
     uint8_t frame[PROTOCOL_MAX_COMMAND_FRAME] = {0};
 
-    LONGS_EQUAL(-STATUS_ERR_ARG,
+    LONGS_EQUAL(-MCUCO_STATUS_ERR_ARG,
                 protocol_gpio_irq_cfg((edge_t)4, PORT_A, 5, frame, sizeof(frame)));
 }
 
@@ -321,7 +321,7 @@ TEST(Protocol, GpioIrqBindRejectsAnEdgeOfOff)
 {
     uint8_t frame[PROTOCOL_MAX_COMMAND_FRAME] = {0};
 
-    LONGS_EQUAL(-STATUS_ERR_ARG,
+    LONGS_EQUAL(-MCUCO_STATUS_ERR_ARG,
                 protocol_gpio_irq_bind(EDGE_OFF, PORT_C, 13, ACTION_TOGGLE, PORT_A, 5,
                                        frame, sizeof(frame)));
 }
@@ -330,7 +330,7 @@ TEST(Protocol, GpioIrqBindRejectsAnActionOutsideTheEncoding)
 {
     uint8_t frame[PROTOCOL_MAX_COMMAND_FRAME] = {0};
 
-    LONGS_EQUAL(-STATUS_ERR_ARG,
+    LONGS_EQUAL(-MCUCO_STATUS_ERR_ARG,
                 protocol_gpio_irq_bind(EDGE_BOTH, PORT_C, 13, (action_t)3, PORT_A, 5,
                                        frame, sizeof(frame)));
 }
@@ -339,10 +339,10 @@ TEST(Protocol, GpioIrqBindValidatesBothPins)
 {
     uint8_t frame[PROTOCOL_MAX_COMMAND_FRAME] = {0};
 
-    LONGS_EQUAL(-STATUS_ERR_ARG,
+    LONGS_EQUAL(-MCUCO_STATUS_ERR_ARG,
                 protocol_gpio_irq_bind(EDGE_BOTH, PORT_C, PIN_MAX + 1, ACTION_TOGGLE,
                                        PORT_A, 5, frame, sizeof(frame)));
-    LONGS_EQUAL(-STATUS_ERR_ARG,
+    LONGS_EQUAL(-MCUCO_STATUS_ERR_ARG,
                 protocol_gpio_irq_bind(EDGE_BOTH, PORT_C, 13, ACTION_TOGGLE, PORT_A,
                                        PIN_MAX + 1, frame, sizeof(frame)));
 }
@@ -377,7 +377,7 @@ TEST(Protocol, PwmChannelCfgRejectsAPolarityOutsideTheEncoding)
 {
     uint8_t frame[PROTOCOL_MAX_COMMAND_FRAME] = {0};
 
-    LONGS_EQUAL(-STATUS_ERR_ARG,
+    LONGS_EQUAL(-MCUCO_STATUS_ERR_ARG,
                 protocol_pwm_channel_cfg((polarity_t)2, PORT_A, 5, frame, sizeof(frame)));
 }
 
@@ -409,7 +409,7 @@ TEST(Protocol, PwmChannelSetRejectsADutyAboveFullScale)
 {
     uint8_t frame[PROTOCOL_MAX_COMMAND_FRAME] = {0};
 
-    LONGS_EQUAL(-STATUS_ERR_ARG,
+    LONGS_EQUAL(-MCUCO_STATUS_ERR_ARG,
                 protocol_pwm_channel_set(DUTY_MAX + 1, PORT_A, 5, frame, sizeof(frame)));
 }
 
@@ -476,7 +476,7 @@ TEST(Protocol, GpioToggleRejectsAPinAboveTheMaximum)
 {
     uint8_t frame[PROTOCOL_MAX_COMMAND_FRAME] = {0};
 
-    LONGS_EQUAL(-STATUS_ERR_ARG,
+    LONGS_EQUAL(-MCUCO_STATUS_ERR_ARG,
                 protocol_gpio_toggle(PORT_A, PIN_MAX + 1, frame, sizeof(frame)));
 }
 

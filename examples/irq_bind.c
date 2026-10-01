@@ -52,7 +52,7 @@ int main(int argc, char **argv)
 
     /* Set a pin as an input */
     mcu_status_t status = mcuco_gpio_cfg(mcu, DIR_INPUT, BUTTON_PORT, BUTTON_PIN);
-    if (status != STATUS_OK)
+    if (status != MCUCO_STATUS_OK)
     {
         fprintf(stderr, "%s\n", mcuco_strerror(status));
         return 1;
@@ -60,7 +60,7 @@ int main(int argc, char **argv)
 
     /* Set a pin as an output */
     status = mcuco_gpio_cfg(mcu, DIR_OUTPUT, LED_PORT, LED_PIN);
-    if (status != STATUS_OK)
+    if (status != MCUCO_STATUS_OK)
     {
         fprintf(stderr, "%s\n", mcuco_strerror(status));
         return 1;
@@ -68,7 +68,7 @@ int main(int argc, char **argv)
 
     /* Arm an interrupt on a pin */
     status = mcuco_gpio_irq_cfg(mcu, EDGE_BOTH, BUTTON_PORT, BUTTON_PIN);
-    if (status != STATUS_OK)
+    if (status != MCUCO_STATUS_OK)
     {
         fprintf(stderr, "%s\n", mcuco_strerror(status));
         return 1;
@@ -76,7 +76,7 @@ int main(int argc, char **argv)
 
     /* Bind the button's interrupt to toggle the LED */
     status = mcuco_gpio_irq_bind(mcu, EDGE_BOTH, BUTTON_PORT, BUTTON_PIN, ACTION_TOGGLE, LED_PORT, LED_PIN);
-    if (status != STATUS_OK)
+    if (status != MCUCO_STATUS_OK)
     {
         fprintf(stderr, "%s\n", mcuco_strerror(status));
         return 1;
