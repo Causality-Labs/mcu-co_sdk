@@ -56,4 +56,5 @@ endif()
 enable_testing()
 
 add_subdirectory(library)
+add_subdirectory(cli)
 add_subdirectory(examples)

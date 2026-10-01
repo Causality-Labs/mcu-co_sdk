@@ -26,13 +26,13 @@ static ssize_t build_frame(protocol_opcode_t opcode, const uint8_t *payload, siz
 {
     if (buffer == NULL || payload_len > PROTOCOL_MAX_PAYLOAD)
     {
-        return -STATUS_ERR_ARG;
+        return -MCUCO_STATUS_ERR_ARG;
     }
 
     size_t frame_len = PROTOCOL_COMMAND_OVERHEAD + payload_len;
     if (buffer_len < frame_len)
     {
-        return -STATUS_ERR_ARG;
+        return -MCUCO_STATUS_ERR_ARG;
     }
 
     buffer[COMMAND_SOF_IDX]    = PROTOCOL_SOF;
@@ -67,12 +67,12 @@ ssize_t protocol_gpio_cfg(dir_t dir, port_t port, uint8_t pin, uint8_t *buffer, 
 {
     if (dir != DIR_INPUT && dir != DIR_OUTPUT)
     {
-        return -STATUS_ERR_ARG;
+        return -MCUCO_STATUS_ERR_ARG;
     }
 
     if (!is_valid_port(port) || !is_valid_pin(pin))
     {
-        return -STATUS_ERR_ARG;
+        return -MCUCO_STATUS_ERR_ARG;
     }
 
     uint8_t payload[3];
@@ -87,12 +87,12 @@ ssize_t protocol_gpio_set(level_t level, port_t port, uint8_t pin, uint8_t *buff
 {
     if (level != LEVEL_LOW && level != LEVEL_HIGH)
     {
-        return -STATUS_ERR_ARG;
+        return -MCUCO_STATUS_ERR_ARG;
     }
 
     if (!is_valid_port(port) || !is_valid_pin(pin))
     {
-        return -STATUS_ERR_ARG;
+        return -MCUCO_STATUS_ERR_ARG;
     }
 
     uint8_t payload[3];
@@ -107,7 +107,7 @@ ssize_t protocol_gpio_get(port_t port, uint8_t pin, uint8_t *buffer, size_t buff
 {
     if (!is_valid_port(port) || !is_valid_pin(pin))
     {
-        return -STATUS_ERR_ARG;
+        return -MCUCO_STATUS_ERR_ARG;
     }
 
     uint8_t payload[2];
@@ -121,12 +121,12 @@ ssize_t protocol_pwm_group_cfg(uint32_t freq_hz, uint8_t group, uint8_t *buffer,
 {
     if (freq_hz < FREQ_MIN || freq_hz > FREQ_MAX)
     {
-        return -STATUS_ERR_ARG;
+        return -MCUCO_STATUS_ERR_ARG;
     }
 
     if (!is_valid_group(group))
     {
-        return -STATUS_ERR_ARG;
+        return -MCUCO_STATUS_ERR_ARG;
     }
 
     uint8_t payload[5];
@@ -140,7 +140,7 @@ ssize_t protocol_pwm_group_get(uint8_t group, uint8_t *buffer, size_t buffer_len
 {
     if (!is_valid_group(group))
     {
-        return -STATUS_ERR_ARG;
+        return -MCUCO_STATUS_ERR_ARG;
     }
 
     uint8_t payload[1];
@@ -153,7 +153,7 @@ ssize_t protocol_gpio_toggle(port_t port, uint8_t pin, uint8_t *buffer, size_t b
 {
     if (!is_valid_port(port) || !is_valid_pin(pin))
     {
-        return -STATUS_ERR_ARG;
+        return -MCUCO_STATUS_ERR_ARG;
     }
 
     uint8_t payload[2];
@@ -167,12 +167,12 @@ ssize_t protocol_gpio_irq_cfg(edge_t edge, port_t port, uint8_t pin, uint8_t *bu
 {
     if (edge > EDGE_BOTH)
     {
-        return -STATUS_ERR_ARG;
+        return -MCUCO_STATUS_ERR_ARG;
     }
 
     if (!is_valid_port(port) || !is_valid_pin(pin))
     {
-        return -STATUS_ERR_ARG;
+        return -MCUCO_STATUS_ERR_ARG;
     }
 
     uint8_t payload[3];
@@ -189,22 +189,22 @@ ssize_t protocol_gpio_irq_bind(edge_t edge, port_t in_port, uint8_t in_pin, acti
     /* Dropping a binding is gpio irq unbind; disarming is gpio irq cfg off. */
     if (edge < EDGE_RISING || edge > EDGE_BOTH)
     {
-        return -STATUS_ERR_ARG;
+        return -MCUCO_STATUS_ERR_ARG;
     }
 
     if (action > ACTION_TOGGLE)
     {
-        return -STATUS_ERR_ARG;
+        return -MCUCO_STATUS_ERR_ARG;
     }
 
     if (!is_valid_port(in_port) || !is_valid_pin(in_pin))
     {
-        return -STATUS_ERR_ARG;
+        return -MCUCO_STATUS_ERR_ARG;
     }
 
     if (!is_valid_port(out_port) || !is_valid_pin(out_pin))
     {
-        return -STATUS_ERR_ARG;
+        return -MCUCO_STATUS_ERR_ARG;
     }
 
     uint8_t payload[6];
@@ -222,7 +222,7 @@ ssize_t protocol_gpio_irq_unbind(port_t port, uint8_t pin, uint8_t *buffer, size
 {
     if (!is_valid_port(port) || !is_valid_pin(pin))
     {
-        return -STATUS_ERR_ARG;
+        return -MCUCO_STATUS_ERR_ARG;
     }
 
     uint8_t payload[2];
@@ -236,7 +236,7 @@ ssize_t protocol_pwm_group_release(uint8_t group, uint8_t *buffer, size_t buffer
 {
     if (!is_valid_group(group))
     {
-        return -STATUS_ERR_ARG;
+        return -MCUCO_STATUS_ERR_ARG;
     }
 
     uint8_t payload[1];
@@ -249,12 +249,12 @@ ssize_t protocol_pwm_channel_cfg(polarity_t polarity, port_t port, uint8_t pin, 
 {
     if (polarity != POL_ACTIVE_HIGH && polarity != POL_ACTIVE_LOW)
     {
-        return -STATUS_ERR_ARG;
+        return -MCUCO_STATUS_ERR_ARG;
     }
 
     if (!is_valid_port(port) || !is_valid_pin(pin))
     {
-        return -STATUS_ERR_ARG;
+        return -MCUCO_STATUS_ERR_ARG;
     }
 
     uint8_t payload[3];
@@ -269,12 +269,12 @@ ssize_t protocol_pwm_channel_set(uint16_t duty, port_t port, uint8_t pin, uint8_
 {
     if (duty > DUTY_MAX)
     {
-        return -STATUS_ERR_ARG;
+        return -MCUCO_STATUS_ERR_ARG;
     }
 
     if (!is_valid_port(port) || !is_valid_pin(pin))
     {
-        return -STATUS_ERR_ARG;
+        return -MCUCO_STATUS_ERR_ARG;
     }
 
     uint8_t payload[4];
@@ -289,7 +289,7 @@ ssize_t protocol_pwm_channel_get(port_t port, uint8_t pin, uint8_t *buffer, size
 {
     if (!is_valid_port(port) || !is_valid_pin(pin))
     {
-        return -STATUS_ERR_ARG;
+        return -MCUCO_STATUS_ERR_ARG;
     }
 
     uint8_t payload[2];
@@ -303,7 +303,7 @@ ssize_t protocol_pwm_channel_release(port_t port, uint8_t pin, uint8_t *buffer, 
 {
     if (!is_valid_port(port) || !is_valid_pin(pin))
     {
-        return -STATUS_ERR_ARG;
+        return -MCUCO_STATUS_ERR_ARG;
     }
 
     uint8_t payload[2];
@@ -317,23 +317,23 @@ mcu_status_t protocol_parse_response(const uint8_t *frame, size_t frame_len, pro
 {
     if (frame == NULL || response == NULL)
     {
-        return STATUS_ERR_ARG;
+        return MCUCO_STATUS_ERR_ARG;
     }
 
     if (frame_len < PROTOCOL_MIN_RESPONSE_FRAME || frame[RESPONSE_SOF_IDX] != PROTOCOL_SOF)
     {
-        return STATUS_ERR_BAD_FRAME;
+        return MCUCO_STATUS_ERR_BAD_FRAME;
     }
 
     size_t length = frame[RESPONSE_LEN_IDX];
     if (length < PROTOCOL_MIN_RESPONSE_LEN || length > PROTOCOL_MAX_RESPONSE_LEN)
     {
-        return STATUS_ERR_BAD_FRAME;
+        return MCUCO_STATUS_ERR_BAD_FRAME;
     }
 
     if (frame_len < PROTOCOL_RESPONSE_OVERHEAD + length)
     {
-        return STATUS_ERR_BAD_FRAME;
+        return MCUCO_STATUS_ERR_BAD_FRAME;
     }
 
     /* The CRC covers LEN, ACK/NACK and DATA - not SOF, not itself. */
@@ -342,7 +342,7 @@ mcu_status_t protocol_parse_response(const uint8_t *frame, size_t frame_len, pro
 
     if (computed != received)
     {
-        return STATUS_ERR_BAD_FRAME;
+        return MCUCO_STATUS_ERR_BAD_FRAME;
     }
 
     response->ack      = (frame[RESPONSE_ACK_IDX] != 0);
@@ -353,5 +353,5 @@ mcu_status_t protocol_parse_response(const uint8_t *frame, size_t frame_len, pro
         response->data[i] = frame[RESPONSE_DATA_IDX + i];
     }
 
-    return STATUS_OK;
+    return MCUCO_STATUS_OK;
 }

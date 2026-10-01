@@ -6,8 +6,6 @@ BUILD_DIR="${SCRIPT_DIR}/build"
 CROSS_BUILD_DIR="${SCRIPT_DIR}/build-arm64"
 TOOLCHAIN_FILE="${SCRIPT_DIR}/cmake/toolchain-aarch64-linux-gnu.cmake"
 
-# The i.MX93 image's glibc. A library linked against anything newer will not
-# load on the board.
 BOARD_GLIBC="2.39"
 
 usage() {

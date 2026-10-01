@@ -48,7 +48,7 @@ int main(int argc, char **argv)
     }
 
     mcu_status_t status = mcuco_gpio_cfg(mcu, DIR_OUTPUT, PORT_A, 5);
-    if (status != STATUS_OK)
+    if (status != MCUCO_STATUS_OK)
     {
         fprintf(stderr, "%s\n", mcuco_strerror(status));
         return 1;
@@ -60,7 +60,7 @@ int main(int argc, char **argv)
     while (!stop_requested)
     {
         status = mcuco_gpio_set(mcu, LEVEL_HIGH, PORT_A, 5);
-        if (status != STATUS_OK)
+        if (status != MCUCO_STATUS_OK)
         {
             fprintf(stderr, "%s\n", mcuco_strerror(status));
             break;
@@ -69,7 +69,7 @@ int main(int argc, char **argv)
         sleep(1);
 
         status = mcuco_gpio_set(mcu, LEVEL_LOW, PORT_A, 5);
-        if (status != STATUS_OK)
+        if (status != MCUCO_STATUS_OK)
         {
             fprintf(stderr, "%s\n", mcuco_strerror(status));
             break;
@@ -81,12 +81,12 @@ int main(int argc, char **argv)
      * keeps driving whatever it was told to until it is reset. Nothing works
      * on this handle afterwards, so closing is all that is left. */
     mcu_status_t reset_status = mcuco_reset(mcu);
-    if (reset_status != STATUS_OK)
+    if (reset_status != MCUCO_STATUS_OK)
     {
         fprintf(stderr, "reset: %s\n", mcuco_strerror(reset_status));
     }
 
     mcuco_close(mcu);
 
-    return (status == STATUS_OK) ? 0 : 1;
+    return (status == MCUCO_STATUS_OK) ? 0 : 1;
 }

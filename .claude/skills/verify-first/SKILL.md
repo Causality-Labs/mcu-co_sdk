@@ -31,7 +31,7 @@ why. A survey of four approaches is work handed back, not work done.
 - A test that passes might be passing for the wrong reason. `ProbeRejectsAValidFrameCarryingTheWrongMagic`
   passed on a hand-written CRC that turned out invalid — the frame was rejected
   on the checksum and never reached the magic comparison. Both paths return
-  `STATUS_ERR_BAD_FRAME`, so it looked fine. Stub out the thing under test and
+  `MCUCO_STATUS_ERR_BAD_FRAME`, so it looked fine. Stub out the thing under test and
   confirm the test then fails.
 - A loop that terminates might terminate by luck. The brightness ramp only
   ended because its step divided the range exactly; any other step ran off.

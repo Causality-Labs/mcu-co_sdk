@@ -8,31 +8,31 @@
  * can never collide with one. */
 typedef enum
 {
-    STATUS_OK = 0,
+    MCUCO_STATUS_OK = 0,
 
-    STATUS_ERR               = 1,
-    STATUS_ERR_INVALID_ARG   = 2,
-    STATUS_ERR_INVALID_PIN   = 3,
-    STATUS_ERR_INVALID_STATE = 4,
-    STATUS_ERR_NOT_INIT      = 5,
-    STATUS_ERR_BUSY          = 6,
-    STATUS_ERR_TIMEOUT       = 7,
-    STATUS_ERR_UNSUPPORTED   = 8,
-    STATUS_ERR_EMPTY         = 9,
-    STATUS_ERR_FULL          = 10,
+    MCUCO_STATUS_ERR               = 1,
+    MCUCO_STATUS_ERR_INVALID_ARG   = 2,
+    MCUCO_STATUS_ERR_INVALID_PIN   = 3,
+    MCUCO_STATUS_ERR_INVALID_STATE = 4,
+    MCUCO_STATUS_ERR_NOT_INIT      = 5,
+    MCUCO_STATUS_ERR_BUSY          = 6,
+    MCUCO_STATUS_ERR_TIMEOUT       = 7,
+    MCUCO_STATUS_ERR_UNSUPPORTED   = 8,
+    MCUCO_STATUS_ERR_EMPTY         = 9,
+    MCUCO_STATUS_ERR_FULL          = 10,
 
-    /* Distinct from STATUS_ERR_INVALID_ARG so a local range check is
+    /* Distinct from MCUCO_STATUS_ERR_INVALID_ARG so a local range check is
      * distinguishable from the MCU's own refusal. */
-    STATUS_ERR_ARG = 0x80,
+    MCUCO_STATUS_ERR_ARG = 0x80,
 
-    STATUS_ERR_IO = 0x81,
+    MCUCO_STATUS_ERR_IO = 0x81,
 
     /* The MCU answers a bad frame with silence, so this cannot be told apart
      * from an absent MCU. */
-    STATUS_ERR_NO_RESPONSE = 0x82,
+    MCUCO_STATUS_ERR_NO_RESPONSE = 0x82,
 
-    STATUS_ERR_BAD_FRAME = 0x83,
-    STATUS_ERR_NOT_OPEN  = 0x84,
+    MCUCO_STATUS_ERR_BAD_FRAME = 0x83,
+    MCUCO_STATUS_ERR_NOT_OPEN  = 0x84,
 } mcu_status_t;
 
 /* One call per command in mcu-co_Protocol.md. Arguments are value-first -
@@ -108,10 +108,10 @@ mcuco_t *mcuco_open(const char *device_path, int timeout_ms);
 void mcuco_close(mcuco_t *mcu);
 
 /* Confirms mcu-co, not just any device, is on the other end. Wrong magic in
- * an otherwise valid reply fails with STATUS_ERR_BAD_FRAME. */
+ * an otherwise valid reply fails with MCUCO_STATUS_ERR_BAD_FRAME. */
 mcu_status_t mcuco_probe(mcuco_t *mcu);
 
-/* Reboots the MCU. STATUS_OK only means the request landed; the link then
+/* Reboots the MCU. MCUCO_STATUS_OK only means the request landed; the link then
  * goes down. Close this handle and open a fresh one once it has booted. */
 mcu_status_t mcuco_reset(mcuco_t *mcu);
 
@@ -122,10 +122,10 @@ mcu_status_t mcuco_gpio_cfg(mcuco_t *mcu, dir_t dir, port_t port, uint8_t pin);
 mcu_status_t mcuco_gpio_set(mcuco_t *mcu, level_t level, port_t port, uint8_t pin);
 
 /* Flips an output pin and reports the level it ended up at, saving the round
- * trip a set-then-get would cost. `level` is untouched unless STATUS_OK. */
+ * trip a set-then-get would cost. `level` is untouched unless MCUCO_STATUS_OK. */
 mcu_status_t mcuco_gpio_toggle(mcuco_t *mcu, port_t port, uint8_t pin, level_t *level);
 
-/* Reads an input pin. `level` is untouched unless STATUS_OK is returned. */
+/* Reads an input pin. `level` is untouched unless MCUCO_STATUS_OK is returned. */
 mcu_status_t mcuco_gpio_get(mcuco_t *mcu, port_t port, uint8_t pin, level_t *level);
 
 /* Arms the trigger only. Set direction with mcuco_gpio_cfg first; attach an
@@ -133,7 +133,7 @@ mcu_status_t mcuco_gpio_get(mcuco_t *mcu, port_t port, uint8_t pin, level_t *lev
 mcu_status_t mcuco_gpio_irq_cfg(mcuco_t *mcu, edge_t edge, port_t port, uint8_t pin);
 
 /* Runs entirely on the MCU once this returns. `edge` must match the armed edge
- * exactly. Rebinding without unbinding first fails with STATUS_ERR_BUSY. */
+ * exactly. Rebinding without unbinding first fails with MCUCO_STATUS_ERR_BUSY. */
 mcu_status_t mcuco_gpio_irq_bind(mcuco_t *mcu, edge_t edge, port_t in_port, uint8_t in_pin, action_t action, port_t out_port,
                                  uint8_t out_pin);
 
@@ -141,11 +141,11 @@ mcu_status_t mcuco_gpio_irq_bind(mcuco_t *mcu, edge_t edge, port_t in_port, uint
 mcu_status_t mcuco_gpio_irq_unbind(mcuco_t *mcu, port_t port, uint8_t pin);
 
 /* All four pins in a group share its frequency. Reconfiguring a live group
- * fails with STATUS_ERR_BUSY and changes nothing; release it first. */
+ * fails with MCUCO_STATUS_ERR_BUSY and changes nothing; release it first. */
 mcu_status_t mcuco_pwm_group_cfg(mcuco_t *mcu, uint32_t freq_hz, uint8_t group);
 
 /* The achieved frequency, which integer prescaler division can make differ
- * from the one requested. Untouched unless STATUS_OK is returned. */
+ * from the one requested. Untouched unless MCUCO_STATUS_OK is returned. */
 mcu_status_t mcuco_pwm_group_get(mcuco_t *mcu, uint8_t group, uint32_t *achieved_hz);
 
 /* Stops the counter and frees all four of the group's channels. */
@@ -158,7 +158,7 @@ mcu_status_t mcuco_pwm_channel_cfg(mcuco_t *mcu, polarity_t polarity, port_t por
  * release: stopping a counter freezes the pin at whatever level it held. */
 mcu_status_t mcuco_pwm_channel_set(mcuco_t *mcu, uint16_t duty, port_t port, uint8_t pin);
 
-/* Reads back a claimed pin's duty. Untouched unless STATUS_OK is returned. */
+/* Reads back a claimed pin's duty. Untouched unless MCUCO_STATUS_OK is returned. */
 mcu_status_t mcuco_pwm_channel_get(mcuco_t *mcu, port_t port, uint8_t pin, uint16_t *duty);
 
 /* Frees one pin, leaving the rest of the group running. */

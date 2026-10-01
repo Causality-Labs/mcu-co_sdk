@@ -99,7 +99,7 @@ TEST(Mcuco, GpioCfgPutsTheDocumentedFrameOnTheWireAndAcceptsTheAck)
 
     reply_with(ACK_FRAME, sizeof(ACK_FRAME));
 
-    LONGS_EQUAL(STATUS_OK, mcuco_gpio_cfg(mcu, DIR_OUTPUT, PORT_A, 5));
+    LONGS_EQUAL(MCUCO_STATUS_OK, mcuco_gpio_cfg(mcu, DIR_OUTPUT, PORT_A, 5));
 
     LONGS_EQUAL(sizeof(GPIO_CFG_FRAME), read(master, sent, sizeof(GPIO_CFG_FRAME)));
     MEMCMP_EQUAL(GPIO_CFG_FRAME, sent, sizeof(GPIO_CFG_FRAME));
@@ -110,12 +110,12 @@ TEST(Mcuco, GpioCfgReturnsTheNackReasonFromTheMcu)
 {
     reply_with(NACK_BUSY, sizeof(NACK_BUSY));
 
-    LONGS_EQUAL(STATUS_ERR_BUSY, mcuco_gpio_cfg(mcu, DIR_OUTPUT, PORT_A, 5));
+    LONGS_EQUAL(MCUCO_STATUS_ERR_BUSY, mcuco_gpio_cfg(mcu, DIR_OUTPUT, PORT_A, 5));
 }
 
 TEST(Mcuco, GpioCfgTimesOutWhenTheMcuSaysNothing)
 {
-    LONGS_EQUAL(STATUS_ERR_NO_RESPONSE, mcuco_gpio_cfg(mcu, DIR_OUTPUT, PORT_A, 5));
+    LONGS_EQUAL(MCUCO_STATUS_ERR_NO_RESPONSE, mcuco_gpio_cfg(mcu, DIR_OUTPUT, PORT_A, 5));
 }
 
 // Rejected locally, so nothing reaches the wire.
@@ -123,7 +123,7 @@ TEST(Mcuco, GpioCfgRejectsABadPinWithoutSendingAnything)
 {
     uint8_t sent[1] = {0};
 
-    LONGS_EQUAL(STATUS_ERR_ARG, mcuco_gpio_cfg(mcu, DIR_OUTPUT, PORT_A, PIN_MAX + 1));
+    LONGS_EQUAL(MCUCO_STATUS_ERR_ARG, mcuco_gpio_cfg(mcu, DIR_OUTPUT, PORT_A, PIN_MAX + 1));
 
     /* Non-blocking, or this read waits for bytes that were never sent. */
     fcntl(master, F_SETFL, O_NONBLOCK);
@@ -132,7 +132,7 @@ TEST(Mcuco, GpioCfgRejectsABadPinWithoutSendingAnything)
 
 TEST(Mcuco, GpioCfgRejectsANullHandle)
 {
-    LONGS_EQUAL(STATUS_ERR_ARG, mcuco_gpio_cfg(NULL, DIR_OUTPUT, PORT_A, 5));
+    LONGS_EQUAL(MCUCO_STATUS_ERR_ARG, mcuco_gpio_cfg(NULL, DIR_OUTPUT, PORT_A, 5));
 }
 
 /* --- mcuco_gpio_set --- */
@@ -144,7 +144,7 @@ TEST(Mcuco, GpioSetPutsTheDocumentedFrameOnTheWireAndAcceptsTheAck)
 
     reply_with(ACK_FRAME, sizeof(ACK_FRAME));
 
-    LONGS_EQUAL(STATUS_OK, mcuco_gpio_set(mcu, LEVEL_HIGH, PORT_A, 5));
+    LONGS_EQUAL(MCUCO_STATUS_OK, mcuco_gpio_set(mcu, LEVEL_HIGH, PORT_A, 5));
 
     LONGS_EQUAL(sizeof(gpio_set_frame), read(master, sent, sizeof(gpio_set_frame)));
     MEMCMP_EQUAL(gpio_set_frame, sent, sizeof(gpio_set_frame));
@@ -157,7 +157,7 @@ TEST(Mcuco, GpioSetReturnsInvalidStateWhenThePinIsNotAnOutput)
 
     reply_with(nack_invalid_state, sizeof(nack_invalid_state));
 
-    LONGS_EQUAL(STATUS_ERR_INVALID_STATE, mcuco_gpio_set(mcu, LEVEL_HIGH, PORT_A, 5));
+    LONGS_EQUAL(MCUCO_STATUS_ERR_INVALID_STATE, mcuco_gpio_set(mcu, LEVEL_HIGH, PORT_A, 5));
 }
 
 /* --- mcuco_gpio_get --- */
@@ -170,7 +170,7 @@ TEST(Mcuco, GpioGetReturnsHighFromTheMcu)
 
     reply_with(read_high, sizeof(read_high));
 
-    LONGS_EQUAL(STATUS_OK, mcuco_gpio_get(mcu, PORT_A, 5, &level));
+    LONGS_EQUAL(MCUCO_STATUS_OK, mcuco_gpio_get(mcu, PORT_A, 5, &level));
     LONGS_EQUAL(LEVEL_HIGH, level);
 }
 
@@ -183,7 +183,7 @@ TEST(Mcuco, GpioGetReturnsLowFromTheMcu)
 
     reply_with(read_low, sizeof(read_low));
 
-    LONGS_EQUAL(STATUS_OK, mcuco_gpio_get(mcu, PORT_A, 5, &level));
+    LONGS_EQUAL(MCUCO_STATUS_OK, mcuco_gpio_get(mcu, PORT_A, 5, &level));
     LONGS_EQUAL(LEVEL_LOW, level);
 }
 
@@ -195,13 +195,13 @@ TEST(Mcuco, GpioGetDoesNotTreatANackReasonAsALevel)
 
     reply_with(nack_invalid_state, sizeof(nack_invalid_state));
 
-    LONGS_EQUAL(STATUS_ERR_INVALID_STATE, mcuco_gpio_get(mcu, PORT_A, 5, &level));
+    LONGS_EQUAL(MCUCO_STATUS_ERR_INVALID_STATE, mcuco_gpio_get(mcu, PORT_A, 5, &level));
     LONGS_EQUAL(LEVEL_LOW, level);   /* untouched */
 }
 
 TEST(Mcuco, GpioGetRejectsANullOutParameter)
 {
-    LONGS_EQUAL(STATUS_ERR_ARG, mcuco_gpio_get(mcu, PORT_A, 5, NULL));
+    LONGS_EQUAL(MCUCO_STATUS_ERR_ARG, mcuco_gpio_get(mcu, PORT_A, 5, NULL));
 }
 
 /* --- mcuco_pwm_group_cfg --- */
@@ -213,7 +213,7 @@ TEST(Mcuco, PwmGroupCfgPutsTheDocumentedFrameOnTheWireAndAcceptsTheAck)
 
     reply_with(ACK_FRAME, sizeof(ACK_FRAME));
 
-    LONGS_EQUAL(STATUS_OK, mcuco_pwm_group_cfg(mcu, 1000, 0));
+    LONGS_EQUAL(MCUCO_STATUS_OK, mcuco_pwm_group_cfg(mcu, 1000, 0));
 
     LONGS_EQUAL(sizeof(expected), read(master, sent, sizeof(expected)));
     MEMCMP_EQUAL(expected, sent, sizeof(expected));
@@ -224,7 +224,7 @@ TEST(Mcuco, PwmGroupCfgReturnsBusyForAGroupAlreadyConfigured)
 {
     reply_with(NACK_BUSY, sizeof(NACK_BUSY));
 
-    LONGS_EQUAL(STATUS_ERR_BUSY, mcuco_pwm_group_cfg(mcu, 1000, 0));
+    LONGS_EQUAL(MCUCO_STATUS_ERR_BUSY, mcuco_pwm_group_cfg(mcu, 1000, 0));
 }
 
 /* --- mcuco_pwm_group_get --- */
@@ -237,7 +237,7 @@ TEST(Mcuco, PwmGroupGetReturnsTheAchievedFrequency)
 
     reply_with(freq_1khz, sizeof(freq_1khz));
 
-    LONGS_EQUAL(STATUS_OK, mcuco_pwm_group_get(mcu, 0, &achieved_hz));
+    LONGS_EQUAL(MCUCO_STATUS_OK, mcuco_pwm_group_get(mcu, 0, &achieved_hz));
     LONGS_EQUAL(1000, achieved_hz);
 }
 
@@ -249,7 +249,7 @@ TEST(Mcuco, PwmGroupGetReturnsNotInitForAnUnconfiguredGroup)
 
     reply_with(nack_not_init, sizeof(nack_not_init));
 
-    LONGS_EQUAL(STATUS_ERR_NOT_INIT, mcuco_pwm_group_get(mcu, 0, &achieved_hz));
+    LONGS_EQUAL(MCUCO_STATUS_ERR_NOT_INIT, mcuco_pwm_group_get(mcu, 0, &achieved_hz));
     LONGS_EQUAL(12345, achieved_hz);   /* untouched */
 }
 
@@ -261,12 +261,12 @@ TEST(Mcuco, PwmGroupGetRejectsAResponseOfTheWrongWidth)
 
     reply_with(read_high, sizeof(read_high));
 
-    LONGS_EQUAL(STATUS_ERR_BAD_FRAME, mcuco_pwm_group_get(mcu, 0, &achieved_hz));
+    LONGS_EQUAL(MCUCO_STATUS_ERR_BAD_FRAME, mcuco_pwm_group_get(mcu, 0, &achieved_hz));
 }
 
 TEST(Mcuco, PwmGroupGetRejectsANullOutParameter)
 {
-    LONGS_EQUAL(STATUS_ERR_ARG, mcuco_pwm_group_get(mcu, 0, NULL));
+    LONGS_EQUAL(MCUCO_STATUS_ERR_ARG, mcuco_pwm_group_get(mcu, 0, NULL));
 }
 
 /* --- the remaining commands, end to end --- */
@@ -278,7 +278,7 @@ TEST(Mcuco, PwmChannelSetPutsTheDocumentedFrameOnTheWire)
 
     reply_with(ACK_FRAME, sizeof(ACK_FRAME));
 
-    LONGS_EQUAL(STATUS_OK, mcuco_pwm_channel_set(mcu, 250, PORT_A, 5));
+    LONGS_EQUAL(MCUCO_STATUS_OK, mcuco_pwm_channel_set(mcu, 250, PORT_A, 5));
 
     LONGS_EQUAL(sizeof(expected), read(master, sent, sizeof(expected)));
     MEMCMP_EQUAL(expected, sent, sizeof(expected));
@@ -292,7 +292,7 @@ TEST(Mcuco, PwmChannelGetReturnsTheDuty)
 
     reply_with(duty_250, sizeof(duty_250));
 
-    LONGS_EQUAL(STATUS_OK, mcuco_pwm_channel_get(mcu, PORT_A, 5, &duty));
+    LONGS_EQUAL(MCUCO_STATUS_OK, mcuco_pwm_channel_get(mcu, PORT_A, 5, &duty));
     LONGS_EQUAL(250, duty);
 }
 
@@ -303,7 +303,7 @@ TEST(Mcuco, PwmChannelCfgReturnsNotInitBeforeTheGroupIsConfigured)
 
     reply_with(nack_not_init, sizeof(nack_not_init));
 
-    LONGS_EQUAL(STATUS_ERR_NOT_INIT,
+    LONGS_EQUAL(MCUCO_STATUS_ERR_NOT_INIT,
                 mcuco_pwm_channel_cfg(mcu, POL_ACTIVE_HIGH, PORT_A, 5));
 }
 
@@ -315,7 +315,7 @@ TEST(Mcuco, GpioIrqBindPutsTheDocumentedFrameOnTheWire)
 
     reply_with(ACK_FRAME, sizeof(ACK_FRAME));
 
-    LONGS_EQUAL(STATUS_OK,
+    LONGS_EQUAL(MCUCO_STATUS_OK,
                 mcuco_gpio_irq_bind(mcu, EDGE_BOTH, PORT_C, 13, ACTION_TOGGLE, PORT_A, 5));
 
     LONGS_EQUAL(sizeof(expected), read(master, sent, sizeof(expected)));
@@ -333,7 +333,7 @@ TEST(Mcuco, ProbeAcceptsTheMagicFromTheProtocolDoc)
 
     reply_with(probe_reply, sizeof(probe_reply));
 
-    LONGS_EQUAL(STATUS_OK, mcuco_probe(mcu));
+    LONGS_EQUAL(MCUCO_STATUS_OK, mcuco_probe(mcu));
 
     LONGS_EQUAL(sizeof(probe_frame), read(master, sent, sizeof(probe_frame)));
     MEMCMP_EQUAL(probe_frame, sent, sizeof(probe_frame));
@@ -349,7 +349,7 @@ TEST(Mcuco, ProbeRejectsAValidFrameCarryingTheWrongMagic)
 
     reply_with(wrong_magic, sizeof(wrong_magic));
 
-    LONGS_EQUAL(STATUS_ERR_BAD_FRAME, mcuco_probe(mcu));
+    LONGS_EQUAL(MCUCO_STATUS_ERR_BAD_FRAME, mcuco_probe(mcu));
 }
 
 /* --- mcuco_gpio_toggle --- */
@@ -363,7 +363,7 @@ TEST(Mcuco, GpioToggleReportsTheLevelItEndedAt)
 
     reply_with(toggled_high, sizeof(toggled_high));
 
-    LONGS_EQUAL(STATUS_OK, mcuco_gpio_toggle(mcu, PORT_A, 5, &level));
+    LONGS_EQUAL(MCUCO_STATUS_OK, mcuco_gpio_toggle(mcu, PORT_A, 5, &level));
     LONGS_EQUAL(LEVEL_HIGH, level);
 
     LONGS_EQUAL(sizeof(toggle_frame), read(master, sent, sizeof(toggle_frame)));
@@ -378,7 +378,7 @@ TEST(Mcuco, GpioToggleReturnsInvalidStateWhenThePinIsNotAnOutput)
 
     reply_with(nack_invalid_state, sizeof(nack_invalid_state));
 
-    LONGS_EQUAL(STATUS_ERR_INVALID_STATE, mcuco_gpio_toggle(mcu, PORT_A, 5, &level));
+    LONGS_EQUAL(MCUCO_STATUS_ERR_INVALID_STATE, mcuco_gpio_toggle(mcu, PORT_A, 5, &level));
 }
 
 /* --- mcuco_open probing --- */
@@ -413,7 +413,7 @@ TEST(Mcuco, ResetPutsTheDocumentedFrameOnTheWire)
 
     reply_with(ACK_FRAME, sizeof(ACK_FRAME));
 
-    LONGS_EQUAL(STATUS_OK, mcuco_reset(mcu));
+    LONGS_EQUAL(MCUCO_STATUS_OK, mcuco_reset(mcu));
 
     LONGS_EQUAL(sizeof(reset_frame), read(master, sent, sizeof(reset_frame)));
     MEMCMP_EQUAL(reset_frame, sent, sizeof(reset_frame));
@@ -427,10 +427,10 @@ TEST(Mcuco, ResetSurfacesANackFromTheMcu)
 
     reply_with(nack_invalid_arg, sizeof(nack_invalid_arg));
 
-    LONGS_EQUAL(STATUS_ERR_INVALID_ARG, mcuco_reset(mcu));
+    LONGS_EQUAL(MCUCO_STATUS_ERR_INVALID_ARG, mcuco_reset(mcu));
 }
 
 TEST(Mcuco, ResetRejectsANullHandle)
 {
-    LONGS_EQUAL(STATUS_ERR_ARG, mcuco_reset(NULL));
+    LONGS_EQUAL(MCUCO_STATUS_ERR_ARG, mcuco_reset(NULL));
 }

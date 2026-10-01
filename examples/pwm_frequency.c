@@ -46,7 +46,7 @@ static void report_group(mcuco_t *mcu, uint8_t group, uint32_t requested_hz)
 
     /* ERR_BUSY leaves the group running at whatever it was already set to, so
      * the read below still says something true. */
-    if (status != STATUS_OK && status != STATUS_ERR_BUSY)
+    if (status != MCUCO_STATUS_OK && status != MCUCO_STATUS_ERR_BUSY)
     {
         fprintf(stderr, "group %u cfg: %s\n", group, mcuco_strerror(status));
         return;
@@ -55,7 +55,7 @@ static void report_group(mcuco_t *mcu, uint8_t group, uint32_t requested_hz)
     uint32_t achieved_hz = 0;
 
     status = mcuco_pwm_group_get(mcu, group, &achieved_hz);
-    if (status != STATUS_OK)
+    if (status != MCUCO_STATUS_OK)
     {
         fprintf(stderr, "group %u get: %s\n", group, mcuco_strerror(status));
         return;
@@ -98,7 +98,7 @@ int main(int argc, char **argv)
      * than driving three groups nobody is listening to. Nothing works on this
      * handle afterwards, so closing is all that is left. */
     mcu_status_t reset_status = mcuco_reset(mcu);
-    if (reset_status != STATUS_OK)
+    if (reset_status != MCUCO_STATUS_OK)
     {
         fprintf(stderr, "reset: %s\n", mcuco_strerror(reset_status));
     }
