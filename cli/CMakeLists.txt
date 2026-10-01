@@ -27,3 +27,10 @@ add_executable(mcu-co-cli
 
 target_link_libraries(mcu-co-cli PRIVATE cli_common)
 target_compile_options(mcu-co-cli PRIVATE ${CLI_COMPILE_OPTIONS})
+
+# Joins library/'s unit_tests rather than a binary of its own, so one run and
+# one -t filter cover both.
+if(NOT CMAKE_CROSSCOMPILING)
+  target_sources(unit_tests PRIVATE tests/test_commands.cpp)
+  target_link_libraries(unit_tests PRIVATE cli_common)
+endif()
