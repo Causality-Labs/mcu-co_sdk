@@ -130,9 +130,10 @@ int main(int argc, char **argv)
         return 0;
     }
 
-    mcuco_args_t mcuco_args = {0};
-    int word_count  = argc - word_index;
-    if (args_parse_mcuco(word_count, &argv[word_index], &mcuco_args) != 0)
+    const command_t *command = NULL;
+    mcuco_args_t mcuco_args  = {0};
+    int word_count           = argc - word_index;
+    if (args_parse_mcuco(word_count, &argv[word_index], &command, &mcuco_args) != 0)
     {
         fprintf(stderr, "mcu-co-cli: bad command\n");
         fprintf(stderr, "try 'mcu-co-cli --help'\n");
@@ -146,7 +147,7 @@ int main(int argc, char **argv)
         return 1;
     }
 
-    mcu_status_t status = mcuco_run_command(mcu, &mcuco_args);
+    mcu_status_t status = mcuco_run_command(mcu, command, &mcuco_args);
     fprintf(stderr, "%s\n", mcuco_strerror(status));
 
     mcuco_close(mcu);

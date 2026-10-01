@@ -419,45 +419,45 @@ static const command_t *mcuco_find_command(const char *subsystem, const char *ve
     return NULL;
 }
 
-int args_parse_mcuco(int word_count, char **words, mcuco_args_t *mcuco_args)
+int args_parse_mcuco(int word_count, char **words, const command_t **command, mcuco_args_t *mcuco_args)
 {
     if (word_count < FIRST_VALUE_WORD)
     {
         return -1;
     }
 
-    const command_t *command = mcuco_find_command(words[SUBSYSTEM_WORD], words[VERB_WORD]);
-    if (command == NULL)
+    const command_t *found = mcuco_find_command(words[SUBSYSTEM_WORD], words[VERB_WORD]);
+    if (found == NULL)
     {
         return -1;
     }
 
-    mcuco_args->command     = command;
-    int expected_word_count = FIRST_VALUE_WORD + command->value_count;
+    int expected_word_count = FIRST_VALUE_WORD + found->value_count;
     if (word_count != expected_word_count)
     {
         return -1;
     }
 
-    for (int value_index = 0; value_index < command->value_count; value_index++)
+    for (int value_index = 0; value_index < found->value_count; value_index++)
     {
-        if (parse_value(command->values[value_index], words[FIRST_VALUE_WORD + value_index], mcuco_args) != 0)
+        if (parse_value(found->values[value_index], words[FIRST_VALUE_WORD + value_index], mcuco_args) != 0)
         {
             return -1;
         }
     }
 
+    *command = found;
     return 0;
 }
 
-mcu_status_t mcuco_run_command(mcuco_t *mcu, const mcuco_args_t *mcuco_args)
+mcu_status_t mcuco_run_command(mcuco_t *mcu, const command_t *command, const mcuco_args_t *mcuco_args)
 {
-    if (mcuco_args->command == NULL)
+    if (command == NULL)
     {
         return STATUS_ERR_ARG;
     }
 
-    return mcuco_args->command->run(mcu, mcuco_args);
+    return command->run(mcu, mcuco_args);
 }
 
 void mcuco_print_commands(FILE *stream)

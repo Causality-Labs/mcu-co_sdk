@@ -28,22 +28,8 @@ typedef enum
 
 #define MAX_VALUE_WORDS 6
 
-typedef struct mcuco_args mcuco_args_t;
-
 typedef struct
 {
-    const char *subsystem;
-    const char *verb;
-    int value_count;
-    word_kind_t values[MAX_VALUE_WORDS];
-    mcu_status_t (*run)(mcuco_t *mcu, const mcuco_args_t *mcuco_args);
-    const char *usage;
-    const char *summary;
-} command_t;
-
-struct mcuco_args
-{
-    const command_t *command;
     dir_t direction;
     level_t level;
     port_t port;
@@ -56,11 +42,21 @@ struct mcuco_args
     action_t action;
     port_t out_port;
     uint8_t out_pin;
-};
+} mcuco_args_t;
 
-int args_parse_mcuco(int word_count, char **words, mcuco_args_t *mcuco_args);
-// const command_t *mcuco_find_command(const char *subsystem, const char *verb);
-mcu_status_t mcuco_run_command(mcuco_t *mcu, const mcuco_args_t *mcuco_args);
+typedef struct
+{
+    const char *subsystem;
+    const char *verb;
+    int value_count;
+    word_kind_t values[MAX_VALUE_WORDS];
+    mcu_status_t (*run)(mcuco_t *mcu, const mcuco_args_t *mcuco_args);
+    const char *usage;
+    const char *summary;
+} command_t;
+
+int args_parse_mcuco(int word_count, char **words, const command_t **command, mcuco_args_t *mcuco_args);
+mcu_status_t mcuco_run_command(mcuco_t *mcu, const command_t *command, const mcuco_args_t *mcuco_args);
 void mcuco_print_commands(FILE *stream);
 
 #endif /* COMMANDS_H */
