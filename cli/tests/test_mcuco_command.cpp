@@ -4,7 +4,8 @@
 #include <string.h>
 #include <unistd.h>
 
-extern "C" {
+extern "C"
+{
 #include "commands.h"
 #include "mcuco_spy.h"
 }
@@ -30,11 +31,13 @@ TEST_GROUP(McucoCommand)
     }
 
     /* Built from the table itself, so a test cannot name a command the CLI
-     * does not have. */
+     * does not have. The parse fails on the missing values, but `command` is
+     * set as soon as the subsystem and verb match. */
     mcuco_args_t command(const char *subsystem, const char *verb)
     {
+        char *words[]           = {(char *)subsystem, (char *)verb};
         mcuco_args_t mcuco_args = {};
-        mcuco_args.command      = mcuco_find_command(subsystem, verb);
+        (void)args_parse_mcuco(2, words, &mcuco_args);
         CHECK(mcuco_args.command != NULL);
 
         mcuco_args.port = PORT_A;
@@ -78,25 +81,6 @@ TEST_GROUP(McucoCommand)
         POINTERS_EQUAL(mcuco_spy_handle(), (void *)mcuco_spy()->handle);
     }
 };
-
-/* --- mcuco_find_command --- */
-
-TEST(McucoCommand, FindsEachSubsystemAndVerbPair)
-{
-    const command_t *row = mcuco_find_command("gpio", "set");
-
-    CHECK(row != NULL);
-    STRCMP_EQUAL("gpio", row->subsystem);
-    STRCMP_EQUAL("set", row->verb);
-}
-
-/* A verb only exists paired with the subsystems that have it. */
-TEST(McucoCommand, AVerbUnderTheWrongSubsystemIsNotACommand)
-{
-    POINTERS_EQUAL(NULL, (void *)mcuco_find_command("mcu", "set"));
-    POINTERS_EQUAL(NULL, (void *)mcuco_find_command("timer", "toggle"));
-    POINTERS_EQUAL(NULL, (void *)mcuco_find_command("spi", "cfg"));
-}
 
 /* --- mcuco_run_command --- */
 
@@ -218,8 +202,8 @@ TEST(McucoCommand, NoMatchedCommandCallsNothing)
 TEST(McucoCommand, EveryCommandInTheTableIsListed)
 {
     static const char *const LINES[] = {
-        "  mcu    probe",   "         reset",   "  gpio   cfg",     "         set",
-        "         get",     "         toggle",  "  timer  cfg",     "         release",
+        "  mcu    probe", "         reset",  "  gpio   cfg", "         set",
+        "         get",   "         toggle", "  timer  cfg", "         release",
     };
     char printed[2048] = {0};
 
@@ -445,10 +429,10 @@ TEST(McucoCommand, IrqUnbindHandsThePortAndPinThrough)
 TEST(McucoCommand, EveryCommandMakesExactlyOneLibraryCall)
 {
     static const char *const EXAMPLES[] = {
-        "mcu probe",       "mcu reset",          "gpio cfg output A 5",     "gpio set high A 5",
-        "gpio get A 5",    "gpio toggle A 5",    "timer cfg 1000 0",        "timer get 0",
-        "timer release 0", "pwm cfg active-high A 5", "pwm set 25 A 5",  "pwm get A 5",
-        "pwm release A 5", "irq cfg rising B 5", "irq bind rising B 5 toggle A 0", "irq unbind B 5",
+        "mcu probe",       "mcu reset",        "gpio cfg output A 5", "gpio set high A 5",  "gpio get A 5",
+        "gpio toggle A 5", "timer cfg 1000 0", "timer get 0",         "timer release 0",    "pwm cfg active-high A 5",
+        "pwm set 25 A 5",  "pwm get A 5",      "pwm release A 5",     "irq cfg rising B 5", "irq bind rising B 5 toggle A 0",
+        "irq unbind B 5",
     };
 
     for (size_t index = 0; index < sizeof(EXAMPLES) / sizeof(EXAMPLES[0]); index++)

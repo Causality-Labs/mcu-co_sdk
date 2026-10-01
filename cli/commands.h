@@ -59,7 +59,7 @@ struct mcuco_args
 };
 
 int args_parse_mcuco(int word_count, char **words, mcuco_args_t *mcuco_args);
-const command_t *mcuco_find_command(const char *subsystem, const char *verb);
+// const command_t *mcuco_find_command(const char *subsystem, const char *verb);
 mcu_status_t mcuco_run_command(mcuco_t *mcu, const mcuco_args_t *mcuco_args);
 void mcuco_print_commands(FILE *stream);
 

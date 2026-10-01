@@ -406,6 +406,19 @@ static const command_t commands[] = {
 
 #define COMMAND_COUNT (sizeof(commands) / sizeof(commands[0]))
 
+static const command_t *mcuco_find_command(const char *subsystem, const char *verb)
+{
+    for (size_t row = 0; row < COMMAND_COUNT; row++)
+    {
+        if (strcmp(commands[row].subsystem, subsystem) == 0 && strcmp(commands[row].verb, verb) == 0)
+        {
+            return &commands[row];
+        }
+    }
+
+    return NULL;
+}
+
 int args_parse_mcuco(int word_count, char **words, mcuco_args_t *mcuco_args)
 {
     if (word_count < FIRST_VALUE_WORD)
@@ -435,19 +448,6 @@ int args_parse_mcuco(int word_count, char **words, mcuco_args_t *mcuco_args)
     }
 
     return 0;
-}
-
-const command_t *mcuco_find_command(const char *subsystem, const char *verb)
-{
-    for (size_t row = 0; row < COMMAND_COUNT; row++)
-    {
-        if (strcmp(commands[row].subsystem, subsystem) == 0 && strcmp(commands[row].verb, verb) == 0)
-        {
-            return &commands[row];
-        }
-    }
-
-    return NULL;
 }
 
 mcu_status_t mcuco_run_command(mcuco_t *mcu, const mcuco_args_t *mcuco_args)
