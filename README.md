@@ -65,8 +65,9 @@ message. Full programs are in [examples/](examples/):
 ### Requirements
 
 - CMake 3.22 or newer
-- A C11 compiler (`gcc`) and a C++ compiler (`g++`), which the unit tests need
-- `git` and network access on the first configure, which downloads CppUTest v4.0
+- A C11 compiler (`gcc`) and a C++ compiler (`g++`)
+- For the unit tests only: `git` and network access on the first configure, which
+  downloads CppUTest v4.0
 
 ### Native build
 
@@ -76,8 +77,8 @@ Run from the repository root to configure build directory.
 cmake -S . -B build
 ```
 
-Then build. The first command below builds everything: the library, the CLI, the
-examples and the unit tests. To build only one of them, add `--target` and its name,
+Then build. The first command below builds everything: the library, the CLI and
+the examples. To build only one of them, add `--target` and its name,
 as the other commands show.
 
 ```sh
@@ -90,9 +91,12 @@ cmake --build build --target blink        # an example     -> build/examples/bli
 The other examples are `pwm_frequency`, `irq_bind` and `pwm_breathe`.
 `cmake --build build --target help` lists every target.
 
-Run the unit tests:
+The unit tests are off by default. To build and run them, configure with
+`-DBUILD_TESTING=ON`:
 
 ```sh
+cmake -S . -B build -DBUILD_TESTING=ON
+cmake --build build
 ctest --test-dir build --verbose
 ```
 

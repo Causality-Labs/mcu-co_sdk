@@ -32,7 +32,7 @@ install(TARGETS mcu-co-cli)
 
 # Joins library/'s unit_tests rather than a binary of its own, so one run and
 # one -t filter cover both.
-if(NOT CMAKE_CROSSCOMPILING)
+if(BUILD_TESTING AND NOT CMAKE_CROSSCOMPILING)
   target_sources(unit_tests PRIVATE tests/test_commands.cpp)
   target_link_libraries(unit_tests PRIVATE cli_common)
 endif()

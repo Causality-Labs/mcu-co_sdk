@@ -43,8 +43,8 @@ install(TARGETS mcuco)
 install(FILES include/mcuco.h DESTINATION ${CMAKE_INSTALL_INCLUDEDIR})
 
 # Tests run on the host against a pty, so they are skipped when the build
-# cross-compiles.
-if(NOT CMAKE_CROSSCOMPILING)
+# cross-compiles. Turning them off also skips downloading CppUTest.
+if(BUILD_TESTING AND NOT CMAKE_CROSSCOMPILING)
   include(FetchContent)
   set(CPPUTEST_PLATFORM Gcc CACHE STRING "Platform implementation")
   set(TESTS OFF CACHE BOOL "Compile and make tests for CppUTest itself" FORCE)

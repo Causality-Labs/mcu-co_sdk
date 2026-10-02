@@ -11,6 +11,7 @@ set(CMAKE_C_STANDARD_REQUIRED ON)
 
 option(ENABLE_CERT_CHECK "Run CERT-C compliance checks with clang-tidy" OFF)
 option(ENABLE_CPPCHECK   "Run general static analysis with cppcheck"    OFF)
+option(BUILD_TESTING     "Build the unit tests (native builds only)"   OFF)
 
 if(ENABLE_CERT_CHECK)
     find_program(CLANG_TIDY clang-tidy REQUIRED)
