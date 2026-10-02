@@ -51,6 +51,7 @@ int main(int argc, char **argv)
     if (status != MCUCO_STATUS_OK)
     {
         fprintf(stderr, "%s\n", mcuco_strerror(status));
+        mcuco_close(mcu);
         return 1;
     }
 

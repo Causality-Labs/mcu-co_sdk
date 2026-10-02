@@ -38,7 +38,7 @@ set_target_properties(mcuco PROPERTIES
 )
 
 # Tests run on the host against a pty, so they are skipped when the build
-# targets the board.
+# cross-compiles.
 if(NOT CMAKE_CROSSCOMPILING)
   include(FetchContent)
   FetchContent_Declare(CppUTest
