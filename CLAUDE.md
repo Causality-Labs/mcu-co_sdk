@@ -6,9 +6,8 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 The **Linux host side** of mcu-co: a C shared library (`libmcuco.so`) that owns the
 serial link to an STM32G474RE co-processor and exposes its UART command protocol as
-typed C calls, plus a CLI built on top of it. C11, `gcc` natively and
-`aarch64-linux-gnu-gcc` for the target board — the NXP i.MX93 FRDM (Cortex-A55,
-aarch64) running Yocto `core-image-minimal` with glibc 2.39.
+typed C calls, plus a CLI built on top of it. C11, built natively or with any
+CMake cross toolchain file; the library is not tied to a particular host board.
 
 The firmware lives in a separate repo,
 [Causality-Labs/mcu-co_firmware](https://github.com/Causality-Labs/mcu-co_firmware),
@@ -24,16 +23,17 @@ authoritative and must not be re-derived here:
 ## Build
 
 Everything goes through `./buildmcu-co.sh` (`-h` for the full list): `-b` build
-natively, `-t [filter]` build and run tests, `-a` cross-compile for the board, `-c`
+natively, `-t [filter]` build and run tests, `-a [toolchain]` cross-compile, `-c`
 remove build trees.
 
 The toolchain file is passed explicitly rather than forced in `CMakeLists.txt` as the
 firmware repo does: this library is host-runnable, and forcing the cross toolchain
 would block the native test build. Tests sit behind `if(NOT CMAKE_CROSSCOMPILING)`.
 
-`-a` verifies what a successful build does not: that the output is actually aarch64,
-and that its glibc floor is **≤ 2.39**. Glibc is backward but not forward compatible,
-so a higher floor builds fine and then refuses to load on the board.
+`-a` reports what a successful build does not: the output's architecture and its
+glibc floor. With `TARGET_GLIBC` set, it fails if the floor is above it. Glibc is
+backward but not forward compatible, so a higher floor builds fine and then refuses
+to load on the target.
 
 Warnings are `-Werror` with the firmware's set, `PRIVATE` on the library target so a
 consumer's build never fails on flags chosen here. New source files must be added to
@@ -44,8 +44,8 @@ consumer's build never fails on flags chosen here. New source files must be adde
 The layers are visible in the file names; what isn't:
 
 - **`uart.c` is not a UART driver.** The kernel owns the hardware (`cdc_acm` for
-  `/dev/ttyACM0`, `ftdi_sio` for `/dev/ttyUSB0`, `imx-lpuart` on the board). It only
-  asks the tty layer for the MCU's line settings.
+  `/dev/ttyACM0`, `ftdi_sio` for `/dev/ttyUSB0`, the SoC's own serial driver on an
+  embedded host). It only asks the tty layer for the MCU's line settings.
 - **Line settings must match `command_transport_init()` in the firmware**: 115200
   8N1, no flow control. `cfmakeraw()` is not optional — default tty settings strip
   the high bit of the `0xA5` SOF and rewrite CR/LF bytes that appear in CRCs.

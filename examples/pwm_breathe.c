@@ -2,7 +2,7 @@
 #include <stdio.h>
 #include <time.h>
 
-#include "mcuco.h"
+#include <mcuco.h>
 
 #define DEFAULT_DEVICE "/dev/ttyACM0"
 
