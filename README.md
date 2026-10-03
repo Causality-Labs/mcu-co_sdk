@@ -39,6 +39,8 @@ Reposity holding the source of Software Development Kit of the mcu-co project, t
 
 ## Usage
 
+### Library
+
 ```c
 #include <mcuco.h>
 
@@ -72,6 +74,36 @@ message. Full programs are in [examples/](examples/):
 | `pwm_frequency.c` | Requesting PWM group frequencies and reading back what the MCU achieved |
 | `pwm_breathe.c` | Fading an LED by ramping a PWM channel's duty cycle |
 | `irq_bind.c` | Binding an input pin's interrupt to toggle an output, handled entirely on the MCU |
+
+### Command-line tool
+
+`mcu-co-cli` runs one command per call: a subsystem, a verb, then values. A pin is
+written as its port and number, e.g. `A 5`.
+
+```sh
+mcu-co-cli mcu probe                          # check the link
+
+mcu-co-cli gpio cfg output A 5                # make A5 an output
+mcu-co-cli gpio set high A 5                  # drive it high
+mcu-co-cli gpio toggle A 5                    # flip it, prints the new level
+mcu-co-cli gpio cfg input C 13
+mcu-co-cli gpio get C 13                      # prints high or low
+
+mcu-co-cli timer cfg 1000 0                   # timer 0 at 1 kHz
+mcu-co-cli pwm cfg active-high A 1            # claim A1 for PWM, starts at 0%
+mcu-co-cli pwm set 25 A 1                     # 25% duty
+mcu-co-cli pwm get A 1                        # prints 25.0
+
+mcu-co-cli irq cfg falling C 13               # arm a trigger on C13
+mcu-co-cli irq bind falling C 13 toggle A 5   # each falling edge toggles A5, on the MCU
+
+mcu-co-cli mcu reset                          # back to a clean state
+```
+
+The serial port defaults to `/dev/ttyACM0`; pass `-d <device>` anywhere in the
+command to use another. Values are printed on stdout and status messages on stderr,
+and the exit code is `0` on success and `1` on failure, so the tool works in
+scripts. `mcu-co-cli --help` lists every command and its arguments.
 
 ## Building
 
