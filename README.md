@@ -2,7 +2,20 @@
 ## Overview
 Reposity holding the source of Software Development Kit of the mcu-co project, this includes: shared library, command line interface and example programs using the library. mcu-co is a microcontroller used as a co-processor for a Linux host: it works as a GPIO expander, provides up to 12 PWM channels, and lets you bind input interrupts to GPIO outputs.
 
-![mcu-co SDK stack: applications and the mcu-co-cli command-line interface both sit on top of the mcu-co library (libmcuco.so)](mcuco_SDK_Stack.png)
+<p align="center">
+  <img src="mcuco_SDK_Stack.png" alt="mcu-co SDK stack: applications and the mcu-co-cli command-line interface both sit on top of the mcu-co library (libmcuco.so)">
+</p>
+
+```
+|- library/       # the shared library (libmcuco.so)
+|  |- include/    # mcuco.h, the public header
+|  |- src/        # library implementation
+|  |- tests/      # unit tests
+|- cli/           # the command-line tool (mcu-co-cli)
+|  |- tests/      # unit tests and a hardware smoke test
+|- examples/      # small programs using the library
+|- cmake/         # example cross-compilation toolchain files
+```
 
 ## Key Features
 

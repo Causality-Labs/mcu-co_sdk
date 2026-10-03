@@ -3,7 +3,7 @@
 #include <stdio.h>
 #include <unistd.h>
 
-#include "mcuco.h"
+#include <mcuco.h>
 
 #define DEFAULT_DEVICE "/dev/ttyACM0"
 
