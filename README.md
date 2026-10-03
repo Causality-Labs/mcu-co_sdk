@@ -65,9 +65,7 @@ message. Full programs are in [examples/](examples/):
 ### Requirements
 
 - CMake 3.22 or newer
-- A C11 compiler (`gcc`) and a C++ compiler (`g++`)
-- For the unit tests only: `git` and network access on the first configure, which
-  downloads CppUTest v4.0
+- A C11 compiler (`gcc`)
 
 ### Native build
 
@@ -144,3 +142,32 @@ cmake --build build-aarch64 --target blink        # an example     -> build-aarc
 
 `unit_tests` is not a target in a cross build.
 
+## Installing
+
+Installing puts the library, the header and the CLI where the system finds them,
+so programs build with plain `-lmcuco` and `mcu-co-cli` runs from anywhere.
+
+### On the machine that builds it
+
+```sh
+cmake -S . -B build -DCMAKE_INSTALL_PREFIX=/usr
+cmake --build build
+sudo cmake --install build
+sudo ldconfig
+```
+
+This installs:
+
+| File | Location |
+|---|---|
+| `libmcuco.so` and its versioned links | `/usr/lib`, or the distribution's library directory such as `/usr/lib/aarch64-linux-gnu` |
+| `mcuco.h` | `/usr/include` |
+| `mcu-co-cli` | `/usr/bin` |
+
+
+Check the install:
+
+```sh
+mcu-co-cli --help
+gcc -std=c11 app.c -lmcuco -o app      # any program that includes <mcuco.h>
+```
