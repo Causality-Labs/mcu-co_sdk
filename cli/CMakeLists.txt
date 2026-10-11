@@ -8,8 +8,6 @@ set(CLI_COMPILE_OPTIONS
   -Wstrict-prototypes
   -Wmissing-prototypes
   -Werror
-  -O0
-  -g
 )
 
 # The parser is its own target so a test can link it without pulling in main().

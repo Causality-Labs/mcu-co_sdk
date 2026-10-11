@@ -28,8 +28,6 @@ target_compile_options(mcuco PRIVATE
   -Wstrict-prototypes
   -Wmissing-prototypes
   -Werror
-  -O0
-  -g
 )
 
 # The version is set once, in the top-level project(); this file's own project()

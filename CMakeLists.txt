@@ -6,6 +6,12 @@ project(mcu-co VERSION 0.1.0
 
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
+# Default to a Debug build when no build type is given. Don't put -O flags in
+# target options: they would override the optimisation a packager asks for.
+if(NOT CMAKE_BUILD_TYPE AND NOT CMAKE_CONFIGURATION_TYPES)
+    set(CMAKE_BUILD_TYPE Debug CACHE STRING "Build type: Debug, Release, RelWithDebInfo or MinSizeRel" FORCE)
+endif()
+
 set(CMAKE_C_STANDARD 11)
 set(CMAKE_C_STANDARD_REQUIRED ON)
 
