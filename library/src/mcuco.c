@@ -70,6 +70,11 @@ static mcu_status_t exchange(mcuco_t *mcu, const uint8_t *frame, ssize_t frame_l
     return MCUCO_STATUS_OK;
 }
 
+const char *mcuco_version(void)
+{
+    return MCUCO_VERSION;
+}
+
 mcuco_t *mcuco_open(const char *device_path, int timeout_ms)
 {
     if (device_path == NULL)

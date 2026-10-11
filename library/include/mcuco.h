@@ -101,6 +101,10 @@ typedef struct mcuco mcuco_t;
 
 const char *mcuco_strerror(mcu_status_t status);
 
+/* The version of the library loaded at run time, e.g. "0.1.0" - which can differ
+ * from the one a program was built against. Never NULL; not to be freed. */
+const char *mcuco_version(void);
+
 /* Returns NULL on failure with errno set, as fopen does. */
 mcuco_t *mcuco_open(const char *device_path, int timeout_ms);
 

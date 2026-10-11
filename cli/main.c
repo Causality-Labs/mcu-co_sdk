@@ -16,6 +16,7 @@ typedef struct
     char *device_path;
     uint16_t timeout;
     bool help;
+    bool version;
 } config_t;
 
 static void print_help(FILE *stream)
@@ -41,6 +42,7 @@ static void print_help(FILE *stream)
     fprintf(stream, "  -d, --device <path>    serial port    [default: /dev/ttyACM0]\n");
     fprintf(stream, "  -t, --timeout <ms>     deadline       [1000, %lu-%lu]\n", TIMEOUT_MIN_MS, TIMEOUT_MAX_MS);
     fprintf(stream, "  -h, --help\n");
+    fprintf(stream, "  -V, --version\n");
 }
 
 static int parse_timeout(const char *word, uint16_t *timeout_ms)
@@ -104,6 +106,10 @@ static int parse_config(int argc, char **argv, config_t *config)
             config->help = true;
             break;
 
+        case 'V':
+            config->version = true;
+            break;
+
         default:
             return -1;
         }
@@ -127,6 +133,12 @@ int main(int argc, char **argv)
     if (config.help == true)
     {
         print_help(stdout);
+        return 0;
+    }
+
+    if (config.version == true)
+    {
+        printf("mcu-co-cli %s (libmcuco %s)\n", MCU_CO_CLI_VERSION, mcuco_version());
         return 0;
     }
 

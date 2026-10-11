@@ -434,3 +434,12 @@ TEST(Mcuco, ResetRejectsANullHandle)
 {
     LONGS_EQUAL(MCUCO_STATUS_ERR_ARG, mcuco_reset(NULL));
 }
+
+/* --- mcuco_version --- */
+
+// Compared against the top-level project version, passed in separately, so a
+// library that picked up its version from anywhere else fails here.
+TEST(Mcuco, VersionIsTheProjectVersion)
+{
+    STRCMP_EQUAL(MCUCO_EXPECTED_VERSION, mcuco_version());
+}

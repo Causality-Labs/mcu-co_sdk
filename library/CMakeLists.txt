@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.22)
 
-project(mcuco VERSION 0.1.0
+project(mcuco
         DESCRIPTION "Host library for the mcu-co MCU co-processor"
         LANGUAGES C CXX)
 
@@ -32,10 +32,13 @@ target_compile_options(mcuco PRIVATE
   -g
 )
 
+# The version is set once, in the top-level project(); this file's own project()
+# would otherwise shadow it.
 set_target_properties(mcuco PROPERTIES
-  VERSION   ${PROJECT_VERSION}
-  SOVERSION ${PROJECT_VERSION_MAJOR}
+  VERSION   ${CMAKE_PROJECT_VERSION}
+  SOVERSION ${CMAKE_PROJECT_VERSION_MAJOR}
 )
+target_compile_definitions(mcuco PRIVATE MCUCO_VERSION="${CMAKE_PROJECT_VERSION}")
 
 include(GNUInstallDirs)
 install(TARGETS mcuco)
@@ -86,6 +89,7 @@ if(BUILD_TESTING AND NOT CMAKE_CROSSCOMPILING)
     tests/test_mcuco.cpp
   )
   target_link_libraries(unit_tests PRIVATE mcuco CppUTest util) # util: openpty
+  target_compile_definitions(unit_tests PRIVATE MCUCO_EXPECTED_VERSION="${CMAKE_PROJECT_VERSION}")
 
   add_test(NAME unit_tests COMMAND unit_tests -v)
 endif()

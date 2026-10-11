@@ -27,6 +27,7 @@ add_executable(mcu-co-cli
 
 target_link_libraries(mcu-co-cli PRIVATE cli_common)
 target_compile_options(mcu-co-cli PRIVATE ${CLI_COMPILE_OPTIONS})
+target_compile_definitions(mcu-co-cli PRIVATE MCU_CO_CLI_VERSION="${CMAKE_PROJECT_VERSION}")
 
 install(TARGETS mcu-co-cli)
 
